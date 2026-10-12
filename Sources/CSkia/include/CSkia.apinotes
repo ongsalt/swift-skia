@@ -108,9 +108,15 @@ Tags:
 - Name: sk_canvas_savelayerrec_flags_t
   SwiftName: SKCanvasSaveLayerRecFlags
   EnumExtensibility: open
+- Name: sk_canvas_savelayerrec_t
+  SwiftName: SKCanvasSaveLayerRec
 - Name: sk_clipop_t
   SwiftName: SKClipOperation
   EnumExtensibility: open
+- Name: sk_codec_frameinfo_t
+  SwiftName: SKCodecFrameInfo
+- Name: sk_codec_options_t
+  SwiftName: SKCodecOptions
 - Name: sk_codec_result_t
   SwiftName: SKCodecResult
   EnumExtensibility: open
@@ -126,18 +132,34 @@ Tags:
 - Name: sk_codecanimation_disposalmethod_t
   SwiftName: SKCodecAnimationDisposalMethod
   EnumExtensibility: open
+- Name: sk_color4f_t
+  SwiftName: SKColor4f
 - Name: sk_color_channel_t
   SwiftName: SKColorChannel
   EnumExtensibility: open
 - Name: sk_colorspace_primaries_cicp_t
   SwiftName: SKColorspacePrimariesCicp
   EnumExtensibility: open
+- Name: sk_colorspace_primaries_t
+  SwiftName: SKColorSpacePrimaries
 - Name: sk_colorspace_transfer_fn_cicp_t
   SwiftName: SKColorspaceTransferFnCicp
   EnumExtensibility: open
+- Name: sk_colorspace_transfer_fn_t
+  SwiftName: SKColorSpaceTransferFn
+- Name: sk_colorspace_xyz_t
+  SwiftName: SKColorSpaceXyz
 - Name: sk_colortype_t
   SwiftName: SKColorType
   EnumExtensibility: open
+- Name: sk_cubic_resampler_t
+  SwiftName: SKCubicResampler
+- Name: sk_document_pdf_datetime_t
+  SwiftName: SKTimeDateTime
+- Name: sk_document_pdf_metadata_t
+  SwiftName: SKDocumentPdfMetadata
+- Name: sk_document_xps_options_t
+  SwiftName: SKDocumentXpsOptions
 - Name: sk_encoded_image_format_t
   SwiftName: SKEncodedImageFormat
   EnumExtensibility: open
@@ -156,15 +178,35 @@ Tags:
 - Name: sk_font_style_slant_t
   SwiftName: SKFontStyleSlant
   EnumExtensibility: open
+- Name: sk_fontarguments_palette_override_t
+  SwiftName: SKFontPaletteOverride
+- Name: sk_fontarguments_variation_axis_t
+  SwiftName: SKFontVariationAxis
+- Name: sk_fontarguments_variation_position_coordinate_t
+  SwiftName: SKFontVariationPositionCoordinate
+- Name: sk_fontmetrics_t
+  SwiftName: SKFontMetrics
 - Name: sk_graphite_backend_t
   SwiftName: SKGraphiteBackend
   EnumExtensibility: open
+- Name: sk_graphite_context_options_t
+  SwiftName: SKGraphiteContextOptions
+- Name: sk_graphite_insert_recording_info_t
+  SwiftName: SKGraphiteInsertRecordingInfo
 - Name: sk_graphite_insert_status_t
   SwiftName: SKGraphiteInsertStatus
   EnumExtensibility: open
+- Name: sk_graphite_submit_info_t
+  SwiftName: SKGraphiteSubmitInfo
+- Name: sk_graphite_vk_backend_context_init_t
+  SwiftName: SKGraphiteVkBackendContext
+- Name: sk_graphite_vk_texture_info_t
+  SwiftName: SKGraphiteVkTextureInfo
 - Name: sk_highcontrastconfig_invertstyle_t
   SwiftName: SKHighContrastConfigInvertStyle
   EnumExtensibility: open
+- Name: sk_highcontrastconfig_t
+  SwiftName: SKHighContrastConfig
 - Name: sk_image_caching_hint_t
   SwiftName: SKImageCachingHint
   EnumExtensibility: open
@@ -174,15 +216,31 @@ Tags:
 - Name: sk_image_rescale_mode_t
   SwiftName: SKImageRescaleMode
   EnumExtensibility: open
+- Name: sk_imageinfo_t
+  SwiftName: SKImageInfo
+- Name: sk_ipoint_t
+  SwiftName: SKPointI
+- Name: sk_irect_t
+  SwiftName: SKRectI
+- Name: sk_isize_t
+  SwiftName: SKSizeI
 - Name: sk_jpegencoder_alphaoption_t
   SwiftName: SKJpegEncoderAlphaOption
   EnumExtensibility: open
 - Name: sk_jpegencoder_downsample_t
   SwiftName: SKJpegEncoderDownsample
   EnumExtensibility: open
+- Name: sk_jpegencoder_options_t
+  SwiftName: SKJpegEncoderOptions
 - Name: sk_lattice_recttype_t
   SwiftName: SKLatticeRectType
   EnumExtensibility: open
+- Name: sk_lattice_t
+  SwiftName: SKLattice
+- Name: sk_matrix44_t
+  SwiftName: SKMatrix44
+- Name: sk_matrix_t
+  SwiftName: SKMatrix
 - Name: sk_mipmap_mode_t
   SwiftName: SKMipmapMode
   EnumExtensibility: open
@@ -228,9 +286,17 @@ Tags:
   SwiftName: SKPngEncoderFilterFlags
   EnumExtensibility: open
   FlagEnum: true
+- Name: sk_pngencoder_options_t
+  SwiftName: SKPngEncoderOptions
+- Name: sk_point3_t
+  SwiftName: SKPoint3
 - Name: sk_point_mode_t
   SwiftName: SKPointMode
   EnumExtensibility: open
+- Name: sk_point_t
+  SwiftName: SKPoint
+- Name: sk_rect_t
+  SwiftName: SKRect
 - Name: sk_region_op_t
   SwiftName: SKRegionOperation
   EnumExtensibility: open
@@ -240,6 +306,10 @@ Tags:
 - Name: sk_rrect_type_t
   SwiftName: SKRoundRectType
   EnumExtensibility: open
+- Name: sk_rsxform_t
+  SwiftName: SKRotationScaleMatrix
+- Name: sk_runtimeeffect_child_t
+  SwiftName: SKRuntimeEffectChild
 - Name: sk_runtimeeffect_child_type_t
   SwiftName: SKRuntimeEffectChildType
   EnumExtensibility: open
@@ -247,12 +317,18 @@ Tags:
   SwiftName: SKRuntimeEffectUniformFlags
   EnumExtensibility: open
   FlagEnum: true
+- Name: sk_runtimeeffect_uniform_t
+  SwiftName: SKRuntimeEffectUniform
 - Name: sk_runtimeeffect_uniform_type_t
   SwiftName: SKRuntimeEffectUniformType
   EnumExtensibility: open
+- Name: sk_sampling_options_t
+  SwiftName: SKSamplingOptions
 - Name: sk_shader_tilemode_t
   SwiftName: SKShaderTileMode
   EnumExtensibility: open
+- Name: sk_size_t
+  SwiftName: SKSize
 - Name: sk_stroke_cap_t
   SwiftName: SKStrokeCap
   EnumExtensibility: open
@@ -269,12 +345,18 @@ Tags:
 - Name: sk_text_encoding_t
   SwiftName: SKTextEncoding
   EnumExtensibility: open
+- Name: sk_textblob_builder_runbuffer_t
+  SwiftName: SKRunBuffer
 - Name: sk_vertices_vertex_mode_t
   SwiftName: SKVertexMode
   EnumExtensibility: open
 - Name: sk_webpencoder_compression_t
   SwiftName: SKWebpEncoderCompression
   EnumExtensibility: open
+- Name: sk_webpencoder_frame_t
+  SwiftName: SKWebpEncoderFrame
+- Name: sk_webpencoder_options_t
+  SwiftName: SKWebpEncoderOptions
 Typedefs:
 - Name: sk_alphatype_t
   SwiftName: SKAlphaType

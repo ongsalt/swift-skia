@@ -6,9 +6,10 @@ import PackageDescription
 // Prebuilt Skia from the "Release Skia" workflow (one bundle per target, see native/).
 // Set SWIFT_SKIA_LOCAL_BUNDLE to a local skia-<target>.artifactbundle directory,
 // relative to this package, to test a CI build artifact instead.
-let localBundle = ProcessInfo.processInfo.environment["SWIFT_SKIA_LOCAL_BUNDLE"].flatMap {
-	$0.isEmpty ? nil : $0
-}
+// var localBundle: String? = ProcessInfo.processInfo.environment["SWIFT_SKIA_LOCAL_BUNDLE"].flatMap {
+// 	$0.isEmpty ? nil : $0
+// }
+var localBundle: String? = nil
 
 let skiaLib: Target =
 	if let localBundle {
@@ -41,16 +42,23 @@ let package = Package(
 		),
 		.target(
 			name: "Skia",
-			dependencies: ["CSkia"]
+			dependencies: ["CSkia"],
+			swiftSettings: [
+				.enableExperimentalFeature("Lifetimes")
+			]
 		),
 		.executableTarget(
 			name: "WriteImage",
-			dependencies: ["Skia"],
+			dependencies: [
+				"Skia",
+			],
 			path: "Examples/WriteImage"
 		),
 		.testTarget(
 			name: "SkiaTests",
-			dependencies: ["Skia"]
+			dependencies: [
+				"Skia",
+			]
 		),
 	]
 )

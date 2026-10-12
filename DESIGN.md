@@ -266,9 +266,9 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 ## 7. Order of work
 
 1. **Done:** `skia.yaml` builds mono/skia per target, runs the C smoke test, makes one bundle per target plus the index; `skia-release.yaml` publishes them.
-2. `Package.swift` with the binaryTarget, plus a tiny Swift test that draws to a raster surface and writes a PNG. This proves the full chain.
+2. **Done:** `Package.swift` with the binaryTarget pointing at the release's `.artifactbundleindex`; raster tests and the `WriteImage` example.
 3. The generator (`gen_apinotes.py`): apinotes and `CSkia.h`. Generated Swift overloads come after v1.
-4. The hand-written layer: Paint, Path, PathBuilder, Font, Canvas.
+4. **Done:** the hand-written layer: `SKPaint`, `SKPath`, `SKPathBuilder`, `SKFont` (`final class`es), and `SKCanvas` (`~Copyable` + `~Escapable`, from `surface.canvas`).
 5. Graphite on Vulkan: Context, Recorder, Recording, render-target and wrapped surfaces. Tests on lavapipe.
 
 ## 8. Risks and open items

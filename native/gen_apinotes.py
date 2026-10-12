@@ -251,11 +251,13 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
         swift = TYPE_NAMES.get(t) or (cs[0] if cs else mechanical_type_name(t))
         if not claim(swift, t):
             continue
+        tag = {"Name": t, "SwiftName": swift}
         if kind == "enum":
-            tag = {"Name": t, "SwiftName": swift, "EnumExtensibility": "open"}
+            tag["EnumExtensibility"] = "open"
             if cs and cs[1]:
                 tag["FlagEnum"] = "true"
-            tags.append(tag)
+        # Tag too, not just the typedef: `typedef struct sk_x_t {…} sk_x_t` imports by tag name.
+        tags.append(tag)
         typedef_notes.append({"Name": t, "SwiftName": swift})
 
     for c_name, member in sorted(cs_members.items()):
