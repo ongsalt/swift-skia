@@ -83,19 +83,16 @@ public final class SKFont {
 	}
 
 	public func measureText(_ text: String, _ paint: SKPaint? = nil) -> Float {
-		var text = text
-		return text.withUTF8 { utf8 in
-			__sk_font_measure_text(handle, utf8.baseAddress, utf8.count, .utf8, nil, paint?.handle)
-		}
+		__sk_font_measure_text(handle, text.utf8.span.bytes, .utf8, nil, paint?.handle)
 	}
 
 	public func glyphs(_ text: String) -> [UInt16] {
-		var text = text
-		return text.withUTF8 { utf8 in
-			let count = __sk_font_text_to_glyphs(handle, utf8.baseAddress, utf8.count, .utf8, nil, 0)
-			return [UInt16](unsafeUninitializedCapacity: Int(count)) { buffer, initialized in
-				initialized = Int(__sk_font_text_to_glyphs(handle, utf8.baseAddress, utf8.count, .utf8, buffer.baseAddress, count))
-			}
-		}
+		let bytes = text.utf8.span.bytes
+		var none: MutableSpan<UInt16>? = nil
+		let count = __sk_font_text_to_glyphs(handle, bytes, .utf8, &none)
+		var glyphs = [UInt16](repeating: 0, count: Int(count))
+		var span: MutableSpan<UInt16>? = glyphs.mutableSpan
+		_ = __sk_font_text_to_glyphs(handle, bytes, .utf8, &span)
+		return glyphs
 	}
 }

@@ -161,7 +161,7 @@ Verified on Swift 6.4 in plain C mode (no C++ interop):
 |---|---|---|---|
 | Struct input passed by pointer (`const sk_rect_t*`) | 167 | `UnsafePointer<Rect>`; callers must write `var r = …; f(&r)` | Overload taking `Rect` by value |
 | Out-parameter (`void f(x, sk_matrix_t* out)`) | 56 | Caller passes `&out` | Return the value, or make it a property |
-| Pointer plus count | 51 | Pointer and `Int32` arguments | Take a `Span` or `Array` |
+| Pointer plus count | 51 | Pointer and `Int32` arguments | **apinotes:** `BoundsSafety` + `NoEscape` per buffer; with `SafeInteropWrappers`, Swift adds overloads taking `Span`/`MutableSpan` (`RawSpan` for `void*`, optional when nullable) with the count dropped |
 | `sk_string_t*` out | 15 | Raw string object | Return `String` |
 | Callback plus context | 13 | `@convention(c)` function plus raw pointer | Closure-based wrapper |
 
@@ -247,9 +247,9 @@ Our layer translates the caller's `vkGetInstanceProcAddr` into SkiaSharp's `sk_g
 1. **Input:** `clang -Xclang -ast-dump=json -fsyntax-only` run over `CSkia.h` with the bundle's include path. We use the toolchain's clang, so there's no libclang dependency.
 2. **Classify types:** a type with `X_ref`/`X_unref` is ref-counted; a type with `X_new`/`X_delete` is owned. `sk_refcnt_t` and `sk_nvrefcnt_t` are base types.
 3. **Name things:** types and enum cases take SkiaSharp's names from its generated C# (`sk_colortype_t` → `SKColorType`, `RGBA_8888_SK_COLORTYPE` → `.rgba8888`), with an override table for the few it lacks. The first parameter becomes `self`. `sk_x_new_foo(...)` becomes the static factory `SKX.foo(_:...)`, and plain `sk_x_new(...)` becomes `init(_:...)`. `get_foo` becomes a property, settable when a matching `set_foo` exists, and `is_*`/`has_*` become `Bool` properties. No argument labels.
-4. **Overrides:** `apinotes-overrides.yaml` fixes names, nullability (the headers have none, so a default plus exceptions) and functions to skip.
-5. **Output (v1):** `CSkia.apinotes` and `CSkia.h`: ref-counted classes, enums and option sets, renames, nullability, and `SwiftPrivate` for wrapped functions.
-6. **Later:** `Sources/Skia/Generated/*.swift` with overloads for the struct-pointer, out-parameter, array, string and callback patterns in §3. The raw functions stay callable until then.
+4. **Overrides:** tables in `gen_apinotes.py`: `TYPE_NAMES`, `UNRETAINED`, `HAND_WRITTEN`, `SENDABLE`, and `COUNTED_BUFFERS` (function → buffer, count, nullable). `COUNTED_BUFFERS` is reviewed by hand rather than inferred: guessing from adjacent parameter names marks non-buffers like `cropRect` and misses pairs like gradient `colors`/`colorCount`, and a wrong `NoEscape` on a buffer Skia keeps would be a use-after-free. The generator fails if a listed parameter no longer exists, so a pin bump surfaces renames.
+5. **Output (v1):** `CSkia.apinotes` and `CSkia.h`: ref-counted classes, enums and option sets, renames, nullability, `SwiftPrivate` for wrapped functions, and bounds annotations for counted buffers.
+6. **Later:** `Sources/Skia/Generated/*.swift` with overloads for the struct-pointer, out-parameter, string and callback patterns in §3. The raw functions stay callable until then.
 
 A CI check regenerates both files and fails if they differ from what's committed. When the mono/skia pin changes, the diff shows exactly what changed in the API.
 
@@ -270,7 +270,7 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 2. **Done:** `Package.swift` with the binaryTarget pointing at the release's `.artifactbundleindex`; raster tests and the `WriteImage` example.
 3. The generator (`gen_apinotes.py`): apinotes and `CSkia.h`. Generated Swift overloads come after v1.
 4. **Done:** the hand-written layer: `SKPaint`, `SKPath`, `SKPathBuilder`, `SKFont` (`final class`es), and `SKCanvas` (`~Copyable` + `~Escapable`, from `surface.canvas`).
-5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Caller-owned `VkImage`s wrap through `SKGraphiteBackendTexture` and `SKSurface.wrapBackendTexture(_:_:_:_:_:)`; `Examples/VulkanWindow` (a separate package needing SDL3) draws into a swapchain this way. The C API can't pass Graphite a final image layout or semaphores, so the example submits synchronously and moves the image from `COLOR_ATTACHMENT_OPTIMAL` to `PRESENT_SRC_KHR` itself; the validation layers report no errors with that.
+5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Caller-owned `VkImage`s wrap through `SKGraphiteBackendTexture` and `SKSurface.wrapBackendTexture(_:_:_:_:_:)`; `Examples/VulkanWindow` (a separate package needing SDL3) draws into a swapchain this way. The C API can't pass Graphite a final image layout or semaphores, so the example submits synchronously and moves the image from `COLOR_ATTACHMENT_OPTIMAL` to `PRESENT_SRC_KHR` itself; the validation layers report no errors with that. That stays until SkiaSharp [#4729](https://github.com/mono/SkiaSharp/pull/4729) merges: it adds `sk_graphite_context_insert_recording_full` with a target texture state and wait/signal semaphores, and [#5329](https://github.com/mono/SkiaSharp/pull/5329) has the matching Vulkan present loop. Then the pin moves to the merged commit.
 
 ## 8. Risks and open items
 
@@ -279,5 +279,5 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 - **Fork lag.** We depend on mono/skia keeping up with upstream Skia. Today it's current.
 - **Nullability defaults.** A wrong "non-null" assumption crashes at runtime rather than failing at compile time. Default to non-null only for results of `_new`/`_make` functions; annotate the rest explicitly.
 - **Canvas escaping through raw pointers.** The `~Escapable` canvas covers the Swift API; the raw `__sk_canvas_*` functions remain unsafe by design.
-- **Lifetime annotations are still experimental.** `@_lifetime` needs `.enableExperimentalFeature("Lifetimes")` on the `Skia` target. That's tested on 6.4: client targets need no flag. The underscored spelling may change in a later Swift, but only our own sources would need updating.
+- **Lifetime annotations and safe interop wrappers are still experimental.** `@_lifetime` needs `.enableExperimentalFeature("Lifetimes")` on the `Skia` target, and the `Span` overloads need `SafeInteropWrappers` there too. That's tested on 6.4: client targets need no flag. The underscored spelling may change in a later Swift, but only our own sources would need updating.
 - **libstdc++ build.** SkiaSharp builds with libc++; we build with libstdc++. The workflow links the whole archive with `--no-undefined` to catch any symbol this leaves unresolved.

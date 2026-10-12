@@ -75,6 +75,60 @@ SENDABLE = {
 # Functions returning a ref-counted object WITHOUT a +1 (checked in mono/skia src/c).
 UNRETAINED = {"sk_get_surface"}
 
+# Buffers passed with their element count: function -> [(buffer, count, nullable)].
+# They get BoundsSafety + NoEscape notes, so Swift adds overloads taking Span / MutableSpan
+# (RawSpan for void*) with the count dropped. Reviewed by hand: every buffer here is only
+# read or written during the call, never kept. Not here on purpose: buffers Skia keeps
+# (sk_data_new_with_proc, sk_memorystream_*), strings (better as String overloads), and
+# textblob builder runs (Skia hands those buffers out).
+_GRADIENT = [("colors", "colorCount", False), ("colorPos", "colorCount", True)]
+COUNTED_BUFFERS = {
+    "sk_canvas_draw_atlas": [("xform", "count", False), ("tex", "count", False), ("colors", "count", True)],
+    "sk_canvas_draw_points": [("points", "count", False)],
+    "sk_canvas_draw_simple_text": [("text", "byte_length", False)],
+    "sk_color_premultiply_array": [("colors", "size", False), ("pmcolors", "size", False)],
+    "sk_color_unpremultiply_array": [("pmcolors", "size", False), ("colors", "size", False)],
+    "sk_colorspace_icc_profile_parse": [("buffer", "length", False)],
+    "sk_data_new_with_copy": [("src", "length", True)],
+    "sk_font_break_text": [("text", "byteLength", False)],
+    "sk_font_get_paths": [("glyphs", "count", False)],
+    "sk_font_get_pos": [("glyphs", "count", False), ("pos", "count", False)],
+    "sk_font_get_widths_bounds": [("glyphs", "count", False), ("widths", "count", True), ("bounds", "count", True)],
+    "sk_font_get_xpos": [("glyphs", "count", False), ("xpos", "count", False)],
+    "sk_font_measure_text": [("text", "byteLength", False)],
+    "sk_font_measure_text_no_return": [("text", "byteLength", False)],
+    "sk_font_text_to_glyphs": [("text", "byteLength", False), ("glyphs", "maxGlyphCount", True)],
+    "sk_font_unichars_to_glyphs": [("uni", "count", False), ("glyphs", "count", False)],
+    "sk_matrix_map_points": [("dst", "count", False), ("src", "count", False)],
+    "sk_matrix_map_vectors": [("dst", "count", False), ("src", "count", False)],
+    "sk_path_effect_create_dash": [("intervals", "count", False)],
+    "sk_path_get_points": [("points", "max", True)],
+    "sk_pathbuilder_add_poly": [("points", "count", False)],
+    "sk_picture_deserialize_from_memory": [("buffer", "length", False)],
+    "sk_region_set_rects": [("rects", "count", False)],
+    "sk_shader_new_linear_gradient": _GRADIENT,
+    "sk_shader_new_linear_gradient_color4f": _GRADIENT,
+    "sk_shader_new_radial_gradient": _GRADIENT,
+    "sk_shader_new_radial_gradient_color4f": _GRADIENT,
+    "sk_shader_new_sweep_gradient": _GRADIENT,
+    "sk_shader_new_sweep_gradient_color4f": _GRADIENT,
+    "sk_shader_new_two_point_conical_gradient": _GRADIENT,
+    "sk_shader_new_two_point_conical_gradient_color4f": _GRADIENT,
+    "sk_stream_peek": [("buffer", "size", False)],
+    "sk_stream_read": [("buffer", "size", True)],
+    "sk_swizzle_swap_rb": [("dest", "count", False), ("src", "count", False)],
+    "sk_text_utils_get_path": [("text", "length", False)],
+    "sk_text_utils_get_pos_path": [("text", "length", False)],
+    "sk_typeface_get_kerning_pair_adjustments": [("glyphs", "count", False), ("adjustments", "count", True)],
+    "sk_typeface_get_table_data": [("data", "length", True)],
+    "sk_typeface_get_variation_design_parameters": [("parameters", "parameterCount", True)],
+    "sk_typeface_get_variation_design_position": [("coordinates", "coordinateCount", True)],
+    "sk_typeface_unichars_to_glyphs": [("unichars", "count", False), ("glyphs", "count", False)],
+    "sk_vertices_make_copy": [("positions", "vertexCount", False), ("texs", "vertexCount", True),
+                              ("colors", "vertexCount", True), ("indices", "indexCount", True)],
+    "sk_wstream_write": [("buffer", "size", False)],
+}
+
 SWIFT_KEYWORDS = {
     "as", "break", "case", "catch", "class", "continue", "default", "defer", "deinit", "do",
     "else", "enum", "extension", "fallthrough", "false", "for", "func", "guard", "if", "import",
@@ -297,6 +351,9 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
                 method_names.add(swift)
                 note["SwiftName"] = swift
 
+        if name in COUNTED_BUFFERS and "Availability" not in note:
+            note["Parameters"] = buffer_notes(name, fn, COUNTED_BUFFERS[name])
+
         if len(note) > 1:
             fn_notes.append(note)
 
@@ -372,6 +429,22 @@ def swift_name(name: str, fn: dict, receivers: list[str], class_names: dict[str,
     return f"{cls}.{base}({unlabeled})" if ok(base) else None
 
 
+def buffer_notes(name: str, fn: dict, buffers: list[tuple[str, str, bool]]) -> list[dict]:
+    params = [p[0] for p in fn["params"]]
+    notes = []
+    for buffer, count, nullable in buffers:
+        if buffer not in params or count not in params:
+            sys.exit(f"COUNTED_BUFFERS: {name} has no parameter {buffer!r} or {count!r}; params are {params}")
+        is_raw = base_type(fn["params"][params.index(buffer)][1]) in ("void*", "void[]")
+        kind = ("sized_by" if is_raw else "counted_by") + ("_or_null" if nullable else "")
+        note = {"Position": params.index(buffer), "NoEscape": "true"}
+        if nullable:
+            note["Nullability"] = "O"
+        note["BoundsSafety"] = {"Kind": kind, "BoundedBy": count}
+        notes.append(note)
+    return notes
+
+
 def write_header(header_names: list[str], ref_shims: dict[str, str]) -> None:
     lines = ["// Generated by native/gen_apinotes.py. Do not edit.", "#pragma once", ""]
     lines += [f'#include "include/c/{h}"' for h in header_names]
@@ -384,6 +457,24 @@ def write_header(header_names: list[str], ref_shims: dict[str, str]) -> None:
     (OUT / "CSkia.h").write_text("\n".join(lines) + "\n")
 
 
+def write_entry(out: list[str], entry: dict, indent: str) -> None:
+    """One YAML list item; values may be scalars, nested dicts or lists of dicts."""
+    first = True
+    for k, v in entry.items():
+        lead = f"{indent}{'- ' if first else '  '}"
+        first = False
+        if isinstance(v, list):
+            out.append(f"{lead}{k}:")
+            for item in v:
+                write_entry(out, item, indent + "  ")
+        elif isinstance(v, dict):
+            out.append(f"{lead}{k}:")
+            for kk, vv in v.items():
+                out.append(f"{indent}    {kk}: {vv}")
+        else:
+            out.append(f"{lead}{k}: {v}")
+
+
 def write_apinotes(tags, typedefs, functions, enumerators) -> None:
     out = ["# Generated by native/gen_apinotes.py. Do not edit.", "---", "Name: CSkia"]
     for section, entries in (("Tags", tags), ("Typedefs", typedefs), ("Functions", functions), ("Enumerators", enumerators)):
@@ -391,10 +482,7 @@ def write_apinotes(tags, typedefs, functions, enumerators) -> None:
             continue
         out.append(f"{section}:")
         for e in entries:
-            first = True
-            for k, v in e.items():
-                out.append(f"{'- ' if first else '  '}{k}: {v}")
-                first = False
+            write_entry(out, e, "")
     (OUT / "CSkia.apinotes").write_text("\n".join(out) + "\n")
 
 

@@ -286,3 +286,49 @@ extension SKRect: @retroactive Equatable {
 		}
 	}
 }
+
+@Suite struct SpanOverloadTests {
+	func pixel(_ shader: SKShader?, _ x: Int32) throws -> SKColor {
+		var info = SKImageInfo(colorspace: nil, width: 100, height: 1, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		let paint = SKPaint()
+		paint.shader = shader
+		surface.canvas.drawPaint(paint)
+		guard let pixmap = surface.peekPixels() else { return 0 }
+		return pixmap.pixelColor(x, 0)
+	}
+
+	@Test func gradientFromSpans() throws {
+		let points = [SKPoint(x: 0, y: 0), SKPoint(x: 100, y: 0)]
+		let colors: [SKColor] = [0xFFFF_0000, 0xFF00_00FF]
+		let even = SKShader.linearGradient(points, colors.span, nil, .clamp, nil)
+		let hardStop = SKShader.linearGradient(points, [0xFFFF_0000, 0xFFFF_0000, 0xFF00_00FF, 0xFF00_00FF].span, [0, 0.9, 0.9, 1].span, .clamp, nil)
+		let (left, right, beforeStop) = (try pixel(even, 0), try pixel(even, 99), try pixel(hardStop, 80))
+		// 0xAARRGGBB: mostly red at the left edge, mostly blue at the right.
+		#expect((left >> 16) & 0xFF > 0xF0 && left & 0xFF < 0x10)
+		#expect((right >> 16) & 0xFF < 0x10 && right & 0xFF > 0xF0)
+		#expect(beforeStop == 0xFFFF_0000)
+	}
+
+	@Test func pathPointsAndPoly() throws {
+		let builder = SKPathBuilder()
+		builder.addPoly([SKPoint(x: 1, y: 2), SKPoint(x: 3, y: 4), SKPoint(x: 5, y: 0)], true)
+		let path = builder.detach()
+		#expect(path.points.map(\.x) == [1, 3, 5])
+		#expect(SKPathEffect.createDash([4, 2].span, 0) != nil)
+	}
+
+	@Test func textBuffers() throws {
+		let font = SKFont(SKTypeface.default(.normal), 16)
+		#expect(font.glyphs("hello").count == 5)
+		#expect(font.glyphs("").isEmpty)
+		#expect(font.measureText("hello") > font.measureText("hi"))
+	}
+
+	@Test func dataFromRawSpan() throws {
+		let bytes = Array("abc".utf8)
+		let copy = SKData.withCopy(bytes.span.bytes)
+		let data = try #require(copy)
+		#expect(data.size == 3)
+	}
+}

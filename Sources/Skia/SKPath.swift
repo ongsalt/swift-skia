@@ -54,10 +54,10 @@ public final class SKPath {
 	public var verbCount: Int32 { __sk_path_count_verbs(handle) }
 
 	public var points: [SKPoint] {
-		let count = pointCount
-		return [SKPoint](unsafeUninitializedCapacity: Int(count)) { buffer, initialized in
-			initialized = Int(__sk_path_get_points(handle, buffer.baseAddress, count))
-		}
+		var points = [SKPoint](repeating: SKPoint(), count: Int(pointCount))
+		var span: MutableSpan<SKPoint>? = points.mutableSpan
+		_ = __sk_path_get_points(handle, &span)
+		return points
 	}
 
 	public var lastPoint: SKPoint? {

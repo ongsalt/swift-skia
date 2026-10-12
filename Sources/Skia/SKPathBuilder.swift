@@ -139,7 +139,7 @@ public final class SKPathBuilder {
 	}
 
 	public func addPoly(_ points: [SKPoint], _ close: Bool = true) {
-		__sk_pathbuilder_add_poly(handle, points, Int32(points.count), close)
+		__sk_pathbuilder_add_poly(handle, points.span, close)
 	}
 
 	public func addPath(_ path: SKPath, _ mode: SKPathAddMode = .append) {

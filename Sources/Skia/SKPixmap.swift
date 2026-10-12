@@ -98,7 +98,7 @@ public struct SKPixmap: ~Copyable, ~Escapable {
 			? dstRowBytes * Int(dstInfo.height - 1) + Int(dstInfo.width) * dstInfo.colorType.bytesPerPixel : 0
 		guard dst.byteCount >= needed, dstRowBytes >= Int(dstInfo.width) * dstInfo.colorType.bytesPerPixel else { return false }
 		var dstInfo = dstInfo
-		return unsafe dst.withUnsafeMutableBytes { buffer in
+		return dst.withUnsafeMutableBytes { buffer in
 			__sk_pixmap_read_pixels(handle, &dstInfo, buffer.baseAddress, dstRowBytes, srcX, srcY)
 		}
 	}

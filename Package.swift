@@ -44,7 +44,9 @@ let package = Package(
 			name: "Skia",
 			dependencies: ["CSkia"],
 			swiftSettings: [
-				.enableExperimentalFeature("Lifetimes")
+				.enableExperimentalFeature("Lifetimes"),
+				// Span overloads for C functions whose buffers CSkia.apinotes annotates.
+				.enableExperimentalFeature("SafeInteropWrappers"),
 			]
 		),
 		.executableTarget(

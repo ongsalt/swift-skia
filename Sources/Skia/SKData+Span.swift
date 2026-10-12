@@ -1,7 +1,7 @@
 extension SKData {
 	/// A copy of `bytes`.
 	public static func withCopy(_ bytes: [UInt8]) -> SKData? {
-		bytes.withUnsafeBytes { withCopy($0.baseAddress, $0.count) }
+		withCopy(bytes.span.bytes)
 	}
 
 	/// The data's bytes. Valid while the data is alive.

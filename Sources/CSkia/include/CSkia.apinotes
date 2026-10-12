@@ -619,6 +619,23 @@ Functions:
   SwiftPrivate: true
 - Name: sk_canvas_draw_atlas
   SwiftPrivate: true
+  Parameters:
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: count
 - Name: sk_canvas_draw_circle
   SwiftPrivate: true
 - Name: sk_canvas_draw_color
@@ -657,6 +674,12 @@ Functions:
   SwiftPrivate: true
 - Name: sk_canvas_draw_points
   SwiftPrivate: true
+  Parameters:
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_canvas_draw_rect
   SwiftPrivate: true
 - Name: sk_canvas_draw_region
@@ -667,6 +690,12 @@ Functions:
   SwiftPrivate: true
 - Name: sk_canvas_draw_simple_text
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: byte_length
 - Name: sk_canvas_draw_text_blob
   SwiftPrivate: true
 - Name: sk_canvas_draw_url_annotation
@@ -715,6 +744,30 @@ Functions:
   SwiftPrivate: true
 - Name: sk_canvas_translate
   SwiftPrivate: true
+- Name: sk_color_premultiply_array
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: size
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: size
+- Name: sk_color_unpremultiply_array
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: size
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: size
 - Name: sk_colorfilter_new_color_matrix
   SwiftReturnOwnership: retained
   SwiftName: SKColorFilter.colorMatrix(_:)
@@ -762,6 +815,13 @@ Functions:
   SwiftName: SKColorSpace.gammaCloseToSrgb(self:)
 - Name: sk_colorspace_gamma_is_linear
   SwiftName: SKColorSpace.gammaIsLinear(self:)
+- Name: sk_colorspace_icc_profile_parse
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: length
 - Name: sk_colorspace_is_numerical_transfer_fn
   SwiftName: SKColorSpace.isNumericalTransferFn(self:_:)
 - Name: sk_colorspace_is_srgb
@@ -819,6 +879,13 @@ Functions:
 - Name: sk_data_new_with_copy
   SwiftReturnOwnership: retained
   SwiftName: SKData.withCopy(_:_:)
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: sized_by_or_null
+      BoundedBy: length
 - Name: sk_data_new_with_proc
   SwiftReturnOwnership: retained
   SwiftName: SKData.withProc(_:_:_:_:)
@@ -845,6 +912,12 @@ Functions:
   SwiftReturnOwnership: retained
 - Name: sk_font_break_text
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: byteLength
 - Name: sk_font_delete
   SwiftPrivate: true
 - Name: sk_font_get_edging
@@ -857,8 +930,25 @@ Functions:
   SwiftPrivate: true
 - Name: sk_font_get_paths
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_font_get_pos
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_font_get_scale_x
   SwiftPrivate: true
 - Name: sk_font_get_size
@@ -870,8 +960,37 @@ Functions:
   SwiftPrivate: true
 - Name: sk_font_get_widths_bounds
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: count
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: count
 - Name: sk_font_get_xpos
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_font_is_baseline_snap
   SwiftPrivate: true
 - Name: sk_font_is_embedded_bitmaps
@@ -886,8 +1005,20 @@ Functions:
   SwiftPrivate: true
 - Name: sk_font_measure_text
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: byteLength
 - Name: sk_font_measure_text_no_return
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: byteLength
 - Name: sk_font_new_with_values
   SwiftPrivate: true
 - Name: sk_font_set_baseline_snap
@@ -916,10 +1047,33 @@ Functions:
   SwiftPrivate: true
 - Name: sk_font_text_to_glyphs
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: byteLength
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: maxGlyphCount
 - Name: sk_font_unichar_to_glyph
   SwiftPrivate: true
 - Name: sk_font_unichars_to_glyphs
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_fontmgr_count_families
   SwiftName: SKFontManager.countFamilies(self:)
 - Name: sk_fontmgr_create_default
@@ -1264,6 +1418,30 @@ Functions:
   Availability: nonswift
 - Name: sk_maskfilter_unref
   Availability: nonswift
+- Name: sk_matrix_map_points
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+- Name: sk_matrix_map_vectors
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_nway_canvas_add_canvas
   SwiftPrivate: true
 - Name: sk_nway_canvas_remove_canvas
@@ -1392,6 +1570,12 @@ Functions:
 - Name: sk_path_effect_create_dash
   SwiftReturnOwnership: retained
   SwiftName: SKPathEffect.createDash(_:_:_:)
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_path_effect_create_discrete
   SwiftReturnOwnership: retained
   SwiftName: SKPathEffect.createDiscrete(_:_:_:)
@@ -1413,6 +1597,13 @@ Functions:
   SwiftPrivate: true
 - Name: sk_path_get_points
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: max
 - Name: sk_path_get_segment_masks
   SwiftPrivate: true
 - Name: sk_path_is_convex
@@ -1455,6 +1646,12 @@ Functions:
   SwiftPrivate: true
 - Name: sk_pathbuilder_add_poly
   SwiftPrivate: true
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_pathbuilder_add_rect
   SwiftPrivate: true
 - Name: sk_pathbuilder_add_rect_start
@@ -1537,6 +1734,12 @@ Functions:
 - Name: sk_picture_deserialize_from_memory
   SwiftReturnOwnership: retained
   SwiftName: SKPicture.deserializeFromMemory(_:_:)
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: length
 - Name: sk_picture_deserialize_from_stream
   SwiftReturnOwnership: retained
   SwiftName: SKPicture.deserializeFromStream(_:)
@@ -1615,6 +1818,13 @@ Functions:
   SwiftPrivate: true
 - Name: sk_region_set_path
   SwiftPrivate: true
+- Name: sk_region_set_rects
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_runtimeeffect_get_child_from_index
   SwiftName: SKRuntimeEffect.getChildFromIndex(self:_:_:)
 - Name: sk_runtimeeffect_get_child_from_name
@@ -1671,9 +1881,33 @@ Functions:
 - Name: sk_shader_new_linear_gradient
   SwiftReturnOwnership: retained
   SwiftName: SKShader.linearGradient(_:_:_:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 2
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_linear_gradient_color4f
   SwiftReturnOwnership: retained
   SwiftName: SKShader.linearGradientColor4f(_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_perlin_noise_fractal_noise
   SwiftReturnOwnership: retained
   SwiftName: SKShader.perlinNoiseFractalNoise(_:_:_:_:_:)
@@ -1683,21 +1917,93 @@ Functions:
 - Name: sk_shader_new_radial_gradient
   SwiftReturnOwnership: retained
   SwiftName: SKShader.radialGradient(_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_radial_gradient_color4f
   SwiftReturnOwnership: retained
   SwiftName: SKShader.radialGradientColor4f(_:_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_sweep_gradient
   SwiftReturnOwnership: retained
   SwiftName: SKShader.sweepGradient(_:_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 2
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_sweep_gradient_color4f
   SwiftReturnOwnership: retained
   SwiftName: SKShader.sweepGradientColor4f(_:_:_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_two_point_conical_gradient
   SwiftReturnOwnership: retained
   SwiftName: SKShader.twoPointConicalGradient(_:_:_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 4
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 5
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_new_two_point_conical_gradient_color4f
   SwiftReturnOwnership: retained
   SwiftName: SKShader.twoPointConicalGradientColor4f(_:_:_:_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 4
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: colorCount
+  - Position: 6
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: colorCount
 - Name: sk_shader_ref
   Availability: nonswift
 - Name: sk_shader_unref
@@ -1710,6 +2016,21 @@ Functions:
   SwiftName: SKShader.withLocalMatrix(self:_:)
 - Name: sk_stream_get_data
   SwiftReturnOwnership: retained
+- Name: sk_stream_peek
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: size
+- Name: sk_stream_read
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: sized_by_or_null
+      BoundedBy: size
 - Name: sk_surface_async_rescale_and_read_pixels
   SwiftName: SKSurface.asyncRescaleAndReadPixels(self:_:_:_:_:_:_:)
 - Name: sk_surface_draw
@@ -1758,10 +2079,34 @@ Functions:
   SwiftName: SKSurface.readPixels(self:_:_:_:_:_:)
 - Name: sk_surface_unref
   Availability: nonswift
+- Name: sk_swizzle_swap_rb
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_text_utils_get_path
   SwiftPrivate: true
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: length
 - Name: sk_text_utils_get_pos_path
   SwiftPrivate: true
+  Parameters:
+  - Position: 0
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: length
 - Name: sk_textblob_builder_alloc_run
   SwiftPrivate: true
 - Name: sk_textblob_builder_alloc_run_pos
@@ -1815,10 +2160,29 @@ Functions:
   SwiftPrivate: true
 - Name: sk_typeface_get_kerning_pair_adjustments
   SwiftName: SKTypeface.getKerningPairAdjustments(self:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: count
 - Name: sk_typeface_get_post_script_name
   SwiftName: getter:SKTypeface.postScriptName(self:)
 - Name: sk_typeface_get_table_data
   SwiftName: SKTypeface.getTableData(self:_:_:_:_:)
+  Parameters:
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: sized_by_or_null
+      BoundedBy: length
 - Name: sk_typeface_get_table_size
   SwiftName: SKTypeface.getTableSize(self:_:)
 - Name: sk_typeface_get_table_tags
@@ -1827,8 +2191,22 @@ Functions:
   SwiftName: getter:SKTypeface.unitsPerEm(self:)
 - Name: sk_typeface_get_variation_design_parameters
   SwiftName: SKTypeface.getVariationDesignParameters(self:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: parameterCount
 - Name: sk_typeface_get_variation_design_position
   SwiftName: SKTypeface.getVariationDesignPosition(self:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: coordinateCount
 - Name: sk_typeface_is_fixed_pitch
   SwiftName: getter:SKTypeface.isFixedPitch(self:)
 - Name: sk_typeface_open_stream
@@ -1837,17 +2215,59 @@ Functions:
   SwiftName: SKTypeface.unicharToGlyph(self:_:)
 - Name: sk_typeface_unichars_to_glyphs
   SwiftName: SKTypeface.unicharsToGlyphs(self:_:_:_:)
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
+  - Position: 3
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: count
 - Name: sk_typeface_unref
   Availability: nonswift
 - Name: sk_vertices_make_copy
   SwiftReturnOwnership: retained
   SwiftName: SKVertices.makeCopy(_:_:_:_:_:_:_:)
+  Parameters:
+  - Position: 2
+    NoEscape: true
+    BoundsSafety:
+      Kind: counted_by
+      BoundedBy: vertexCount
+  - Position: 3
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: vertexCount
+  - Position: 4
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: vertexCount
+  - Position: 6
+    NoEscape: true
+    Nullability: O
+    BoundsSafety:
+      Kind: counted_by_or_null
+      BoundedBy: indexCount
 - Name: sk_vertices_ref
   Availability: nonswift
 - Name: sk_vertices_unref
   Availability: nonswift
 - Name: sk_webpencoder_encode
   SwiftPrivate: true
+- Name: sk_wstream_write
+  Parameters:
+  - Position: 1
+    NoEscape: true
+    BoundsSafety:
+      Kind: sized_by
+      BoundedBy: size
 Enumerators:
 - Name: A16_FLOAT_SK_COLORTYPE
   SwiftName: a16Float

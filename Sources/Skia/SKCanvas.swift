@@ -143,7 +143,7 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	}
 
 	public func drawPoints(_ mode: SKPointMode, _ points: [SKPoint], _ paint: SKPaint) {
-		__sk_canvas_draw_points(handle, mode, points.count, points, paint.handle)
+		__sk_canvas_draw_points(handle, mode, points.span, paint.handle)
 	}
 
 	public func drawLine(_ x0: Float, _ y0: Float, _ x1: Float, _ y1: Float, _ paint: SKPaint) {
@@ -221,11 +221,7 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	}
 
 	public func drawText(_ text: String, _ x: Float, _ y: Float, _ font: SKFont, _ paint: SKPaint) {
-		var text = text
-		text.withUTF8 { utf8 in
-			__sk_canvas_draw_simple_text(
-				handle, utf8.baseAddress, utf8.count, .utf8, x, y, font.handle, paint.handle)
-		}
+		__sk_canvas_draw_simple_text(handle, text.utf8.span.bytes, .utf8, x, y, font.handle, paint.handle)
 	}
 
 	public func drawTextBlob(_ blob: SKTextBlob, _ x: Float, _ y: Float, _ paint: SKPaint) {
