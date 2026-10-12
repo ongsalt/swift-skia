@@ -6,7 +6,7 @@ of static_library deps (libskia.a, skcms, ...) stay in their own archives. Those
 archives also repeat source_set objects (core.*), so members are deduplicated by
 content hash. Not by name: two sources in one target can share a basename.
 
-usage: merge_archives.py <output.a> <input.a>...
+usage: merge_archives.py <output.a> <input.a>... [--exclude <member.o>]...
 """
 import hashlib
 import pathlib
@@ -38,12 +38,19 @@ def members(path: pathlib.Path):
 
 
 def main() -> None:
-    out, inputs = pathlib.Path(sys.argv[1]), [pathlib.Path(p) for p in sys.argv[2:]]
+    args, exclude = sys.argv[1:], set()
+    while "--exclude" in args:
+        i = args.index("--exclude")
+        exclude.add(args[i + 1])
+        del args[i:i + 2]
+    out, inputs = pathlib.Path(args[0]), [pathlib.Path(p) for p in args[1:]]
     seen: set[str] = set()
     with tempfile.TemporaryDirectory() as tmp:
         files = []
         for archive in inputs:
             for name, body in members(archive):
+                if name in exclude:
+                    continue
                 digest = hashlib.sha256(body).hexdigest()
                 if digest in seen:
                     continue
