@@ -20,6 +20,11 @@ concurrency:
   group: native-${{ github.ref }}
   cancel-in-progress: true
 
+# Container jobs default to `sh`; the steps use bash syntax.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   linux-x86_64:
     runs-on: ubuntu-24.04
