@@ -79,13 +79,15 @@ jobs:
           ./smoke "$stage/smoke.png"
           test -s "$stage/smoke.png"
 
-      - name: Report unresolved symbols (informational)
+      - name: Check every object in the archive links
         if: matrix.target == 'linux'
-        continue-on-error: true
         run: |
-          clang -shared -o /tmp/whole.so \
-            -Wl,--whole-archive builds/${{ matrix.target }}-${{ matrix.arch }}/libSkiaSharp.a -Wl,--no-whole-archive \
-            -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined 2>&1 | grep -o "undefined reference to .*" | sort -u | head -100
+          if ! clang -shared -o /tmp/whole.so \
+              -Wl,--whole-archive builds/${{ matrix.target }}-${{ matrix.arch }}/libSkiaSharp.a -Wl,--no-whole-archive \
+              -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined > link.log 2>&1; then
+            grep -o "undefined reference to .*" link.log | sort -u | head -100 || cat link.log
+            exit 1
+          fi
 
       - name: Create artifact bundle
         run: |

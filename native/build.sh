@@ -106,7 +106,9 @@ mkdir -p "$STAGE"
 
 # complete_static_lib doesn't fold static_library deps (libskia.a, skcms, ...)
 # into libSkiaSharp.a, so merge every archive the build produced.
-python3 "$HERE/merge_archives.py" "$STAGE/libSkiaSharp.a" "$OUT"/*.a
+# gr_context.o is SkiaSharp's Ganesh C API; it references the GL backend, which
+# we don't build, and the Swift side hides gr_* anyway.
+python3 "$HERE/merge_archives.py" "$STAGE/libSkiaSharp.a" "$OUT"/*.a --exclude core.gr_context.o
 
 # The headers include each other as "include/c/...", so stage include/ itself.
 mkdir -p "$STAGE/include"
