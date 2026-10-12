@@ -177,7 +177,7 @@ The SkiaSharp C API has about 20 **ref-counted** types (they have `_ref`/`_unref
 |---|---|---|---|
 | Ref-counted | Image, Shader, Surface, Typeface, Data, ColorSpace, ColorFilter, ImageFilter, MaskFilter, PathEffect, Blender, Picture, TextBlob, Vertices, RuntimeEffect, FontMgr | Swift classes straight from apinotes | **generated** |
 | Simple data structs and enums | `sk_rect_t`, `sk_point_t`, `sk_matrix_t`, `sk_color4f_t`, `sk_imageinfo_t`, enums | Renamed via apinotes (`Rect`, `Point`, …); small Swift extensions add initializers and operators | generated, plus a few small extensions |
-| Owned and passed to other calls | Paint, Path, PathBuilder, Font | `final class` that wraps the pointer, with `deinit` calling `_delete`, properties for get/set pairs, and one-line forwarding methods. Reference semantics like the C API; `copy()` via `sk_*_clone` | **hand-written** |
+| Owned and passed to other calls | Paint, Path, PathBuilder, Font, FontStyle | `final class` that wraps the pointer, with `deinit` calling `_delete`, properties for get/set pairs, and one-line forwarding methods. Reference semantics like the C API; `copy()` via `sk_*_clone` | **hand-written** |
 | Borrowed | Canvas (from a surface or picture recorder), iterators, byte views | `~Escapable` views whose lifetime depends on their owner; see **Lifetimes** below | **hand-written** |
 | Graphite | Context, Recorder, Recording, BackendTexture, TextureInfo | Unique owners, as in rust-skia: `~Copyable` structs whose `deinit` deletes the handle. `insert` borrows the recording, which can be inserted again | **hand-written** |
 
@@ -200,7 +200,8 @@ rust-skia has already decided which Skia objects depend on which (`ref/rust-skia
 | rust-skia | Used for | Swift |
 |---|---|---|
 | `fn canvas(&mut self) -> &Canvas` | `Surface::canvas`, `PictureRecorder::begin_recording`, `Document::canvas`, Graphite `Recorder::make_deferred_canvas` | `var canvas: SKCanvas { @_lifetime(&self) mutating get }`, the same shape as the standard library's `Array.mutableSpan`. `SKCanvas` is `~Copyable` and `~Escapable` and never deletes the canvas. The owner must be a `var`, like Rust's `let mut` |
-| `fn as_bytes(&self) -> &[u8]` | `Data::as_bytes`, pixel access | `Span<UInt8>` with `@_lifetime(borrow self)` |
+| `fn as_bytes(&self) -> &[u8]` | `Data::as_bytes` | `SKData.span: Span<UInt8>` with `@_lifetime(borrow self)` |
+| `Pixmap<'a>` from `peek_pixels` | `Image::peek_pixels(&self)`, `Surface::peek_pixels(&mut self)` | `SKPixmap` (`~Copyable`, `~Escapable`, frees its C handle in `deinit`): `image.peekPixels()` with `@_lifetime(borrow self)`, `surface.peekPixels()` with `@_lifetime(&self)`; `pixmap.bytes: RawSpan` |
 | `Iter<'a>` with `PhantomData<&'a Path>` | path, region and text blob iterators | `~Escapable` iterator struct with `@_lifetime(borrow path)` |
 | `BorrowedRecorder<'a>` | `Canvas::recorder()` | `~Escapable` recorder view tied to the canvas, which doesn't delete the recorder |
 | `RefHandle<T>` (unique owner, no `Clone`) | Graphite `Context`, `Recorder`, `Recording` | `~Copyable` struct with `deinit` |
@@ -274,6 +275,7 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 ## 8. Risks and open items
 
 - **Third-party symbol clashes.** The bundled zlib, libpng, freetype, expat, libjpeg-turbo and libwebp are visible in `libSkiaSharp.a` and can clash with other copies in an app. Not handled in v1. The fix is an `ld -r` merge plus `objcopy --localize-symbol` for the third-party symbols.
+- **No per-character font fallback on Linux.** Without fontconfig, Skia uses its directory font manager, whose `matchFamilyStyleCharacter` always returns nil. Text in scripts the chosen typeface lacks shows missing glyphs. Enabling fontconfig, or a fallback list chosen in Swift, would fix it.
 - **Fork lag.** We depend on mono/skia keeping up with upstream Skia. Today it's current.
 - **Nullability defaults.** A wrong "non-null" assumption crashes at runtime rather than failing at compile time. Default to non-null only for results of `_new`/`_make` functions; annotate the rest explicitly.
 - **Canvas escaping through raw pointers.** The `~Escapable` canvas covers the Swift API; the raw `__sk_canvas_*` functions remain unsafe by design.

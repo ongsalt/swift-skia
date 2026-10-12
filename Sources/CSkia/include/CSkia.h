@@ -53,6 +53,7 @@ struct __attribute__((swift_attr("@Sendable"))) sk_blender_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_colorfilter_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_colorspace_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_data_t;
+struct __attribute__((swift_attr("@Sendable"))) sk_fontmgr_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_image_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_imagefilter_t;
 struct __attribute__((swift_attr("@Sendable"))) sk_maskfilter_t;

@@ -141,3 +141,148 @@ extension SKRect: @retroactive Equatable {
 		a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom
 	}
 }
+
+@Suite struct EncodeTests {
+	func drawnSurface() throws -> SKSurface {
+		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		let paint = SKPaint()
+		paint.color = 0xFF00_80FF
+		surface.canvas.drawPaint(paint)
+		return surface
+	}
+
+	@Test func surfacePixmapReadsPixels() throws {
+		var surface = try drawnSurface()
+		guard let pixmap = surface.peekPixels() else {
+			Issue.record("raster surface has no pixels")
+			return
+		}
+		let (width, height, rowBytes) = (pixmap.width, pixmap.height, pixmap.rowBytes)
+		let (color, byteCount, isOpaque) = (pixmap.pixelColor(2, 2), pixmap.bytes.byteCount, pixmap.isOpaque)
+		#expect(width == 6)
+		#expect(height == 4)
+		#expect(rowBytes >= 6 * 4)
+		#expect(color == 0xFF00_80FF)
+		#expect(byteCount == rowBytes * 4)
+		#expect(isOpaque)
+	}
+
+	@Test(arguments: [SKEncodedImageFormat.png, .jpeg, .webp])
+	func encodesAndDecodes(_ format: SKEncodedImageFormat) throws {
+		let image = try #require(try drawnSurface().newImageSnapshot())
+		let data = try #require(image.encode(format, 90))
+		#expect(data.size > 0)
+		let decoded = try #require(SKImage.fromEncoded(data))
+		#expect(decoded.width == 6)
+		#expect(decoded.height == 4)
+	}
+
+	@Test func pngSignature() throws {
+		let image = try #require(try drawnSurface().newImageSnapshot())
+		let data = try #require(image.encode(.png))
+		let span = data.span
+		#expect(span.count == data.size)
+		#expect([span[0], span[1], span[2], span[3]] == [0x89, 0x50, 0x4E, 0x47])  // "\x89PNG"
+	}
+
+	@Test func unsupportedFormatReturnsNil() throws {
+		let image = try #require(try drawnSurface().newImageSnapshot())
+		#expect(image.encode(.gif) == nil)
+	}
+}
+
+@Suite struct DataAndFontStyleTests {
+	@Test func dataCopiesBytes() throws {
+		let data = try #require(SKData.withCopy([1, 2, 3, 250]))
+		#expect(data.size == 4)
+		let span = data.span
+		#expect(span[3] == 250)
+	}
+
+	@Test func fontStyle() {
+		let style = SKFontStyle(700, 5, .italic)
+		#expect(style.weight == 700)
+		#expect(style.width == 5)
+		#expect(style.slant == .italic)
+		#expect(SKFontStyle.bold.weight == 700)
+	}
+
+	@Test func defaultTypeface() throws {
+		let typeface = try #require(SKTypeface.default(.bold))
+		#expect(typeface.fontStyle.weight >= 600)
+		let font = SKFont(typeface, 16)
+		#expect(font.measureText("hello") > 0)
+	}
+}
+
+@Suite struct ReviewFixTests {
+	@Test func emptyDataHasEmptySpan() throws {
+		let data = try #require(SKData.withCopy([]))
+		let count = data.span.count
+		#expect(count == 0)
+	}
+
+	@Test func pixmapBytesStopAtLastPixel() throws {
+		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.raster(&info, 32, nil))  // padded rows
+		guard let pixmap = surface.peekPixels() else {
+			Issue.record("no pixels")
+			return
+		}
+		let (rowBytes, byteCount) = (pixmap.rowBytes, pixmap.bytes.byteCount)
+		#expect(rowBytes == 32)
+		#expect(byteCount == 32 * 3 + 6 * 4)
+	}
+
+	@Test func pixmapEraseReadAndSubset() throws {
+		var info = SKImageInfo(colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		guard let pixmap = surface.peekPixels() else {
+			Issue.record("no pixels")
+			return
+		}
+		pixmap.erase(0xFF00_FF00)
+		pixmap.erase(0xFFFF_0000, SKRectI(left: 2, top: 2, right: 4, bottom: 4))
+		var out = [UInt8](repeating: 0, count: 16 * 4)
+		var outSpan = out.mutableSpan
+		var outBytes = outSpan.mutableBytes
+		let read = pixmap.readPixels(info, &outBytes, 16)
+		let corner = pixmap.pixelColor(3, 3)
+		let subsetWidth = pixmap.extractSubset(SKRectI(left: 1, top: 1, right: 3, bottom: 4))?.width
+		#expect(read)
+		#expect(Array(out[0..<4]) == [0x00, 0xFF, 0x00, 0xFF])  // green, RGBA bytes
+		#expect(corner == 0xFFFF_0000)
+		#expect(subsetWidth == 2)
+
+		var tooSmall = [UInt8](repeating: 0, count: 8)
+		var smallSpan = tooSmall.mutableSpan
+		var smallBytes = smallSpan.mutableBytes
+		let rejected = !pixmap.readPixels(info, &smallBytes, 16)
+		#expect(rejected)
+	}
+
+	@Test func rasterCopyFromPixmap() throws {
+		var info = SKImageInfo(colorspace: nil, width: 3, height: 2, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		surface.canvas.clear(0xFF12_3456)
+		guard let pixmap = surface.peekPixels() else {
+			Issue.record("no pixels")
+			return
+		}
+		let copy = SKImage.rasterCopy(pixmap)
+		let image = try #require(copy)
+		#expect(image.width == 3)
+	}
+
+	@Test func fontFallbackAndStyleSets() throws {
+		let manager = SKFontManager.default
+		// Skia's directory font manager doesn't implement character matching: always nil here.
+		#expect(manager.matchFamilyStyleCharacter(nil, .normal, ["en"], "A") == nil)
+		let set = try #require(manager.createStyleset(0))
+		if set.count > 0 {
+			let (style, _) = set.style(0)
+			#expect(style.weight > 0)
+		}
+	}
+}

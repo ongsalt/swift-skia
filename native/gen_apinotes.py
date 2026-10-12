@@ -44,6 +44,7 @@ HAND_WRITTEN = {
     "sk_canvas_t", "sk_paint_t", "sk_path_t", "sk_pathbuilder_t", "sk_font_t",
     "sk_graphite_context_t", "sk_graphite_recorder_t", "sk_graphite_recording_t",
     "sk_graphite_backend_texture_t",
+    "sk_pixmap_t", "sk_fontstyle_t",
 }
 
 # Base classes, not types of their own.
@@ -64,9 +65,9 @@ TYPE_NAMES = {
     "sk_webpencoder_options_t": "SKWebpEncoderOptions",
 }
 
-# Immutable once created, so safe to share across threads.
+# Immutable once created (or internally synchronized, like SkFontMgr), so safe to share across threads.
 SENDABLE = {
-    "sk_blender_t", "sk_colorfilter_t", "sk_colorspace_t", "sk_data_t", "sk_image_t",
+    "sk_blender_t", "sk_colorfilter_t", "sk_colorspace_t", "sk_data_t", "sk_fontmgr_t", "sk_image_t",
     "sk_imagefilter_t", "sk_maskfilter_t", "sk_path_effect_t", "sk_picture_t",
     "sk_runtimeeffect_t", "sk_shader_t", "sk_textblob_t", "sk_typeface_t", "sk_vertices_t",
 }

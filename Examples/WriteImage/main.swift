@@ -31,10 +31,7 @@ builder.close()
 let star = builder.detach()
 
 // Text, in the default family of the system font directory.
-let fontManager = SKFontManager.createDefault()!
-let style = sk_fontstyle_new(700, 5, .upright)
-defer { sk_fontstyle_delete(style) }
-let font = SKFont(fontManager.legacyCreateTypeface(nil, style), 44)
+let font = SKFont(SKTypeface.default(.bold), 44)
 
 do {
 	let canvas = surface.canvas
@@ -63,16 +60,8 @@ do {
 	canvas.drawText("Skia from Swift", 40, 310, font, paint)
 }
 
-// Encode as PNG.
-let pixmap = sk_pixmap_new()!
-defer { sk_pixmap_destructor(pixmap) }
-guard surface.peekPixels(pixmap) else { fatalError("peekPixels failed") }
-
-let stream = sk_filewstream_new(path)!
-var options = SKPngEncoderOptions()
-options.fZLibLevel = 6
-let encoded = sk_pngencoder_encode(stream, pixmap, &options)
-sk_filewstream_destroy(stream)
-
-guard encoded else { fatalError("PNG encoding failed") }
-print("wrote \(path) (\(width)x\(height), \(fontManager.countFamilies()) font families)")
+guard let png = surface.peekPixels()?.encode(.png) else { fatalError("PNG encoding failed") }
+guard let file = fopen(path, "wb") else { fatalError("can't open \(path)") }
+png.span.withUnsafeBufferPointer { _ = fwrite($0.baseAddress, 1, $0.count, file) }
+fclose(file)
+print("wrote \(path) (\(width)x\(height), \(png.size) bytes)")

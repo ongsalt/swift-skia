@@ -31,11 +31,8 @@ guard var context = SKGraphiteContext.vulkan(backend) else { fatalError("Skia re
 guard var recorder = context.makeRecorder() else { fatalError("could not create a Graphite recorder") }
 print("Graphite on \(String(cString: cw_device_name(window)))")
 
-let fontManager = SKFontManager.createDefault()!
-let style = sk_fontstyle_new(700, 5, .upright)
-defer { sk_fontstyle_delete(style) }
-let titleFont = SKFont(fontManager.legacyCreateTypeface(nil, style), 40)
-let smallFont = SKFont(fontManager.legacyCreateTypeface(nil, style), 18)
+let titleFont = SKFont(SKTypeface.default(.bold), 40)
+let smallFont = SKFont(SKTypeface.default(.bold), 18)
 let paint = SKPaint()
 paint.isAntialias = true
 
@@ -72,14 +69,11 @@ func draw(_ canvas: borrowing SKCanvas, _ width: Float, _ height: Float, _ time:
 
 func writePNG(_ pixels: [UInt8], _ rowBytes: Int, _ info: SKImageInfo, _ path: String) {
 	var info = info
-	guard let image = SKImage.rasterCopy(&info, pixels, rowBytes) else { return }
-	let pixmap = sk_pixmap_new()!
-	defer { sk_pixmap_destructor(pixmap) }
-	guard image.peekPixels(pixmap), let stream = sk_filewstream_new(path) else { return }
-	var options = SKPngEncoderOptions()
-	options.fZLibLevel = 6
-	_ = sk_pngencoder_encode(stream, pixmap, &options)
-	sk_filewstream_destroy(stream)
+	guard let png = SKImage.rasterCopy(&info, pixels, rowBytes)?.encode(.png),
+		let file = fopen(path, "wb")
+	else { return }
+	png.span.withUnsafeBufferPointer { _ = fwrite($0.baseAddress, 1, $0.count, file) }
+	fclose(file)
 }
 
 var frame = cw_frame()

@@ -579,8 +579,12 @@ Functions:
   Availability: nonswift
 - Name: sk_bitmap_extract_alpha
   SwiftPrivate: true
+- Name: sk_bitmap_install_pixels_with_pixmap
+  SwiftPrivate: true
 - Name: sk_bitmap_make_shader
   SwiftReturnOwnership: retained
+- Name: sk_bitmap_peek_pixels
+  SwiftPrivate: true
 - Name: sk_blender_new_arithmetic
   SwiftReturnOwnership: retained
   SwiftName: SKBlender.arithmetic(_:_:_:_:_:)
@@ -937,18 +941,28 @@ Functions:
   SwiftName: SKFontManager.getFamilyName(self:_:_:)
 - Name: sk_fontmgr_legacy_create_typeface
   SwiftReturnOwnership: retained
-  SwiftName: SKFontManager.legacyCreateTypeface(self:_:_:)
+  SwiftPrivate: true
 - Name: sk_fontmgr_match_family
   SwiftReturnOwnership: retained
   SwiftName: SKFontManager.matchFamily(self:_:)
 - Name: sk_fontmgr_match_family_style
   SwiftReturnOwnership: retained
-  SwiftName: SKFontManager.matchFamilyStyle(self:_:_:)
+  SwiftPrivate: true
 - Name: sk_fontmgr_match_family_style_character
   SwiftReturnOwnership: retained
-  SwiftName: SKFontManager.matchFamilyStyleCharacter(self:_:_:_:_:_:)
+  SwiftPrivate: true
 - Name: sk_fontmgr_unref
   Availability: nonswift
+- Name: sk_fontstyle_delete
+  SwiftPrivate: true
+- Name: sk_fontstyle_get_slant
+  SwiftPrivate: true
+- Name: sk_fontstyle_get_weight
+  SwiftPrivate: true
+- Name: sk_fontstyle_get_width
+  SwiftPrivate: true
+- Name: sk_fontstyle_new
+  SwiftPrivate: true
 - Name: sk_fontstyleset_create_empty
   SwiftReturnOwnership: retained
   SwiftName: SKFontStyleSet.createEmpty()
@@ -958,10 +972,10 @@ Functions:
 - Name: sk_fontstyleset_get_count
   SwiftName: getter:SKFontStyleSet.count(self:)
 - Name: sk_fontstyleset_get_style
-  SwiftName: SKFontStyleSet.getStyle(self:_:_:_:)
+  SwiftPrivate: true
 - Name: sk_fontstyleset_match_style
   SwiftReturnOwnership: retained
-  SwiftName: SKFontStyleSet.matchStyle(self:_:)
+  SwiftPrivate: true
 - Name: sk_fontstyleset_unref
   Availability: nonswift
 - Name: sk_get_recording_context
@@ -1106,29 +1120,29 @@ Functions:
   Availability: nonswift
 - Name: sk_image_new_raster
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.raster(_:_:_:)
+  SwiftPrivate: true
 - Name: sk_image_new_raster_copy
   SwiftReturnOwnership: retained
   SwiftName: SKImage.rasterCopy(_:_:_:)
 - Name: sk_image_new_raster_copy_with_pixmap
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.rasterCopyWithPixmap(_:)
+  SwiftPrivate: true
 - Name: sk_image_new_raster_data
   SwiftReturnOwnership: retained
   SwiftName: SKImage.rasterData(_:_:_:)
 - Name: sk_image_peek_pixels
-  SwiftName: SKImage.peekPixels(self:_:)
+  SwiftPrivate: true
 - Name: sk_image_read_pixels
   SwiftName: SKImage.readPixels(self:_:_:_:_:_:_:)
 - Name: sk_image_read_pixels_into_pixmap
-  SwiftName: SKImage.readPixelsIntoPixmap(self:_:_:_:_:)
+  SwiftPrivate: true
 - Name: sk_image_ref
   Availability: nonswift
 - Name: sk_image_ref_encoded
   SwiftReturnOwnership: retained
   SwiftName: SKImage.refEncoded(self:)
 - Name: sk_image_scale_pixels
-  SwiftName: SKImage.scalePixels(self:_:_:_:)
+  SwiftPrivate: true
 - Name: sk_image_unref
   Availability: nonswift
 - Name: sk_imagefilter_new_arithmetic
@@ -1226,6 +1240,8 @@ Functions:
   SwiftName: SKImageFilter.tile(_:_:_:)
 - Name: sk_imagefilter_unref
   Availability: nonswift
+- Name: sk_jpegencoder_encode
+  SwiftPrivate: true
 - Name: sk_maskfilter_new_blur
   SwiftReturnOwnership: retained
   SwiftName: SKMaskFilter.blur(_:_:)
@@ -1552,8 +1568,49 @@ Functions:
   SwiftName: SKPicture.serializeToStream(self:_:)
 - Name: sk_picture_unref
   Availability: nonswift
+- Name: sk_pixmap_compute_is_opaque
+  SwiftPrivate: true
+- Name: sk_pixmap_destructor
+  SwiftPrivate: true
+- Name: sk_pixmap_erase_color
+  SwiftPrivate: true
+- Name: sk_pixmap_erase_color4f
+  SwiftPrivate: true
+- Name: sk_pixmap_extract_subset
+  SwiftPrivate: true
 - Name: sk_pixmap_get_colorspace
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
+- Name: sk_pixmap_get_info
+  SwiftPrivate: true
+- Name: sk_pixmap_get_pixel_alphaf
+  SwiftPrivate: true
+- Name: sk_pixmap_get_pixel_color
+  SwiftPrivate: true
+- Name: sk_pixmap_get_pixel_color4f
+  SwiftPrivate: true
+- Name: sk_pixmap_get_row_bytes
+  SwiftPrivate: true
+- Name: sk_pixmap_get_writable_addr
+  SwiftPrivate: true
+- Name: sk_pixmap_get_writeable_addr_with_xy
+  SwiftPrivate: true
+- Name: sk_pixmap_new
+  SwiftPrivate: true
+- Name: sk_pixmap_new_with_params
+  SwiftPrivate: true
+- Name: sk_pixmap_read_pixels
+  SwiftPrivate: true
+- Name: sk_pixmap_reset
+  SwiftPrivate: true
+- Name: sk_pixmap_reset_with_params
+  SwiftPrivate: true
+- Name: sk_pixmap_scale_pixels
+  SwiftPrivate: true
+- Name: sk_pixmap_set_colorspace
+  SwiftPrivate: true
+- Name: sk_pngencoder_encode
+  SwiftPrivate: true
 - Name: sk_region_get_boundary_path
   SwiftPrivate: true
 - Name: sk_region_set_path
@@ -1696,7 +1753,7 @@ Functions:
   SwiftReturnOwnership: retained
   Availability: nonswift
 - Name: sk_surface_peek_pixels
-  SwiftName: SKSurface.peekPixels(self:_:)
+  SwiftPrivate: true
 - Name: sk_surface_read_pixels
   SwiftName: SKSurface.readPixels(self:_:_:_:_:_:)
 - Name: sk_surface_unref
@@ -1755,7 +1812,7 @@ Functions:
 - Name: sk_typeface_get_font_width
   SwiftName: getter:SKTypeface.fontWidth(self:)
 - Name: sk_typeface_get_fontstyle
-  SwiftName: getter:SKTypeface.fontstyle(self:)
+  SwiftPrivate: true
 - Name: sk_typeface_get_kerning_pair_adjustments
   SwiftName: SKTypeface.getKerningPairAdjustments(self:_:_:_:)
 - Name: sk_typeface_get_post_script_name
@@ -1789,6 +1846,8 @@ Functions:
   Availability: nonswift
 - Name: sk_vertices_unref
   Availability: nonswift
+- Name: sk_webpencoder_encode
+  SwiftPrivate: true
 Enumerators:
 - Name: A16_FLOAT_SK_COLORTYPE
   SwiftName: a16Float

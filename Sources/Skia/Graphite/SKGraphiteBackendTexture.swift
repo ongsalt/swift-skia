@@ -30,16 +30,10 @@ public struct SKGraphiteBackendTexture: ~Copyable {
 
 	public var backend: SKGraphiteBackend { __sk_graphite_backend_texture_get_backend(handle) }
 
-	public var width: Int32 {
-		var (width, height): (Int32, Int32) = (0, 0)
-		__sk_graphite_backend_texture_get_dimensions(handle, &width, &height)
-		return width
-	}
-
-	public var height: Int32 {
-		var (width, height): (Int32, Int32) = (0, 0)
-		__sk_graphite_backend_texture_get_dimensions(handle, &width, &height)
-		return height
+	public var dimensions: SKSizeI {
+		var size = SKSizeI()
+		__sk_graphite_backend_texture_get_dimensions(handle, &size.w, &size.h)
+		return size
 	}
 }
 
