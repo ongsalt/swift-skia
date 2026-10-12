@@ -75,4 +75,8 @@ mkdir -p "$OUT"
 
 # --- build ----------------------------------------------------------------
 ninja -C "$OUT" SkiaSharp
-ls -lh "$OUT/libSkiaSharp.a"
+
+# complete_static_lib doesn't fold static_library deps (libskia.a, skcms, ...)
+# into libSkiaSharp.a, so merge every archive the build produced.
+python3 "$HERE/merge_archives.py" "$OUT/merged/libSkiaSharp.a" "$OUT"/*.a
+ls -lh "$OUT"/*.a "$OUT/merged/libSkiaSharp.a"

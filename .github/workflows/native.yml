@@ -20,7 +20,6 @@ concurrency:
   group: native-${{ github.ref }}
   cancel-in-progress: true
 
-# Container jobs default to `sh`; the steps use bash syntax.
 defaults:
   run:
     shell: bash
@@ -62,7 +61,7 @@ jobs:
 
       - name: Smoke test (raster draw + PNG encode, Graphite symbols linked)
         run: |
-          clang -std=c11 -O1 native/smoke.c -Iskia-src -Lout/linux-x64 -lSkiaSharp \
+          clang -std=c11 -O1 native/smoke.c -Iskia-src -Lout/linux-x64/merged -lSkiaSharp \
             -lstdc++ -lm -lpthread -ldl -o smoke
           ./smoke smoke.png
           test -s smoke.png
@@ -70,12 +69,12 @@ jobs:
       - name: Report unresolved symbols in the whole archive (informational)
         continue-on-error: true
         run: |
-          clang -shared -o /tmp/whole.so -Wl,--whole-archive out/linux-x64/libSkiaSharp.a -Wl,--no-whole-archive \
+          clang -shared -o /tmp/whole.so -Wl,--whole-archive out/linux-x64/merged/libSkiaSharp.a -Wl,--no-whole-archive \
             -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined 2>&1 | grep -o "undefined reference to .*" | sort -u | head -100
 
       - name: Bundle
         run: |
-          python3 native/bundle.py --lib out/linux-x64/libSkiaSharp.a --skia-src skia-src \
+          python3 native/bundle.py --lib out/linux-x64/merged/libSkiaSharp.a --skia-src skia-src \
             --version "${{ steps.version.outputs.tag }}" --dist dist
           cp smoke.png dist/
 
