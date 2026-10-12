@@ -1,0 +1,44 @@
+# Builds every target and publishes the bundles + index as a GitHub release
+# tagged skia-<sha12> (from native/skia.pin).
+name: Release Skia
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/skia.yaml
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download bundles and index
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact_id }}
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          checksum=$(cat dist/skia.artifactbundleindex.sha256)
+          notes=$(printf '%s\n' \
+            "mono/skia \`${TAG#skia-}\`, one artifact bundle per target." \
+            "" \
+            "\`\`\`swift" \
+            ".binaryTarget(name: \"SkiaLib\"," \
+            "  url: \"https://github.com/${GH_REPO}/releases/download/${TAG}/skia.artifactbundleindex\"," \
+            "  checksum: \"${checksum}\")" \
+            "\`\`\`")
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "$TAG" --notes "$notes"
+          fi

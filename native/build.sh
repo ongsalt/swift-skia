@@ -1,18 +1,43 @@
 #!/usr/bin/env bash
 # Builds mono/skia (SkiaSharp's Skia fork, which carries the C API) as one static
-# libSkiaSharp.a for x86_64 Linux. Meant to run in CI inside swift:6.4-jammy.
+# libSkiaSharp.a and stages it for native/bundle.py.
 #
+# usage: native/build.sh <target> <arch>       e.g. native/build.sh linux x86_64
 # env:
-#   SKIA_SRC  checkout directory  (default: ./skia-src)
-#   SKIA_OUT  GN output directory (default: ./out/linux-x64)
+#   SKIA_SRC  checkout directory        (default: ./skia-src)
+#   BUILDS    staging root              (default: ./builds)
+# output: $BUILDS/<target>-<arch>/{libSkiaSharp.a, include/, manifest.json}
 set -euo pipefail
 
+TARGET=${1:?usage: build.sh <target> <arch>}
+ARCH=${2:?usage: build.sh <target> <arch>}
+NAME="$TARGET-$ARCH"
 HERE=$(cd "$(dirname "$0")" && pwd)
 SRC=$(realpath -m "${SKIA_SRC:-skia-src}")
-OUT=$(realpath -m "${SKIA_OUT:-out/linux-x64}")
+STAGE=$(realpath -m "${BUILDS:-builds}/$NAME")
+OUT=$(realpath -m "out/$NAME")
 PIN=$(tr -d '[:space:]' < "$HERE/skia.pin")
 
-# --- source ---------------------------------------------------------------
+# --- target -----------------------------------------------------------------
+# Everything that differs per platform lives here.
+case "$NAME" in
+  linux-x86_64)
+    PLATFORM=linux
+    TRIPLES='["x86_64-unknown-linux-gnu"]'
+    TARGET_ARGS=('target_os="linux"' 'target_cpu="x64"')
+    ;;
+  linux-arm64)
+    PLATFORM=linux
+    TRIPLES='["aarch64-unknown-linux-gnu"]'
+    TARGET_ARGS=('target_os="linux"' 'target_cpu="arm64"')
+    ;;
+  *)
+    echo "unsupported target: $NAME" >&2
+    exit 1
+    ;;
+esac
+
+# --- source -----------------------------------------------------------------
 if [ ! -d "$SRC/.git" ] || [ "$(git -C "$SRC" rev-parse HEAD)" != "$PIN" ]; then
   rm -rf "$SRC"
   git init -q "$SRC"
@@ -30,8 +55,7 @@ fi
 #   - libstdc++ instead of -stdlib=libc++, because Swift on Linux links libstdc++
 #   - RAW codec off (its dng_sdk/piex sources aren't in the fork's DEPS)
 ARGS=(
-  'target_os="linux"'
-  'target_cpu="x64"'
+  "${TARGET_ARGS[@]}"
   'cc="clang"'
   'cxx="clang++"'
   'is_official_build=true'
@@ -73,10 +97,29 @@ ARGS=(
 mkdir -p "$OUT"
 (cd "$SRC" && bin/gn gen "$OUT" --args="${ARGS[*]}")
 
-# --- build ----------------------------------------------------------------
+# --- build ------------------------------------------------------------------
 ninja -C "$OUT" SkiaSharp
+
+# --- stage ------------------------------------------------------------------
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
 
 # complete_static_lib doesn't fold static_library deps (libskia.a, skcms, ...)
 # into libSkiaSharp.a, so merge every archive the build produced.
-python3 "$HERE/merge_archives.py" "$OUT/merged/libSkiaSharp.a" "$OUT"/*.a
-ls -lh "$OUT"/*.a "$OUT/merged/libSkiaSharp.a"
+python3 "$HERE/merge_archives.py" "$STAGE/libSkiaSharp.a" "$OUT"/*.a
+
+# The headers include each other as "include/c/...", so stage include/ itself.
+mkdir -p "$STAGE/include"
+cp -r "$SRC/include/c" "$SRC/include/xamarin" "$STAGE/include/"
+find "$STAGE/include" -type f ! -name 'sk_*.h' ! -name 'gr_*.h' ! -name 'skottie_*.h' ! -name 'sksg_*.h' ! -name 'skresources_*.h' -delete
+
+cat > "$STAGE/manifest.json" <<EOF
+{
+  "name": "$NAME",
+  "platform": "$PLATFORM",
+  "library": "libSkiaSharp.a",
+  "supportedTriples": $TRIPLES,
+  "skiaCommit": "$PIN"
+}
+EOF
+ls -lh "$STAGE/libSkiaSharp.a"

@@ -1,0 +1,139 @@
+# Builds mono/skia (pinned in native/skia.pin) into SwiftPM artifact bundles:
+# one .artifactbundle.zip per target plus an .artifactbundleindex over all of them.
+# Runs on changes to native/; skia-release.yaml calls it to publish a release.
+name: Build Skia
+
+on:
+  workflow_call:
+    outputs:
+      tag:
+        description: "Release tag for this Skia pin (skia-<sha12>)"
+        value: ${{ jobs.index.outputs.tag }}
+      artifact_id:
+        description: "Artifact ID holding every bundle zip and the index"
+        value: ${{ jobs.index.outputs.artifact_id }}
+  push:
+    branches: [main]
+    paths: [native/**, .github/workflows/skia.yaml]
+  pull_request:
+    paths: [native/**, .github/workflows/skia.yaml]
+
+defaults:
+  run:
+    shell: bash # container jobs default to sh
+
+jobs:
+  build:
+    name: build (${{ matrix.target }}-${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # container: Jammy sets the glibc/libstdc++ baseline users need.
+          # Leave it empty for runners that build natively (macOS, Windows).
+          - platform: ubuntu-24.04
+            container: swift:6.4-jammy
+            target: linux
+            arch: x86_64
+          # - platform: ubuntu-24.04-arm
+          #   container: swift:6.4-jammy
+          #   target: linux
+          #   arch: arm64
+
+    runs-on: ${{ matrix.platform }}
+    container: ${{ matrix.container }}
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install prerequisites on Linux
+        if: runner.os == 'Linux'
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git python3 ninja-build curl ca-certificates libstdc++-12-dev
+          git config --global --add safe.directory '*'
+
+      - name: Version
+        id: version
+        run: |
+          pin=$(tr -d '[:space:]' < native/skia.pin)
+          echo "tag=skia-${pin:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: skia-src
+          key: skia-src-${{ runner.os }}-${{ hashFiles('native/skia.pin') }}
+
+      - name: Build Skia for ${{ matrix.target }} (${{ matrix.arch }})
+        run: native/build.sh ${{ matrix.target }} ${{ matrix.arch }}
+
+      - name: Smoke test (raster draw + PNG encode, Graphite symbols linked)
+        if: matrix.target == 'linux'
+        run: |
+          stage=builds/${{ matrix.target }}-${{ matrix.arch }}
+          clang -std=c11 -O1 native/smoke.c -I"$stage" -L"$stage" -lSkiaSharp \
+            -lstdc++ -lm -lpthread -ldl -o smoke
+          ./smoke "$stage/smoke.png"
+          test -s "$stage/smoke.png"
+
+      - name: Report unresolved symbols (informational)
+        if: matrix.target == 'linux'
+        continue-on-error: true
+        run: |
+          clang -shared -o /tmp/whole.so \
+            -Wl,--whole-archive builds/${{ matrix.target }}-${{ matrix.arch }}/libSkiaSharp.a -Wl,--no-whole-archive \
+            -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined 2>&1 | grep -o "undefined reference to .*" | sort -u | head -100
+
+      - name: Create artifact bundle
+        run: |
+          python3 native/bundle.py bundle builds/${{ matrix.target }}-${{ matrix.arch }} \
+            --version ${{ steps.version.outputs.tag }} --dist dist
+
+      - name: Upload artifact bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: skia-bundle-${{ matrix.target }}-${{ matrix.arch }}
+          path: |
+            dist/
+            builds/*/smoke.png
+          retention-days: 7
+
+  index:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Version
+        id: version
+        run: |
+          pin=$(tr -d '[:space:]' < native/skia.pin)
+          echo "tag=skia-${pin:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifact bundles
+        uses: actions/download-artifact@v8
+        with:
+          pattern: skia-bundle-*
+          path: all
+          merge-multiple: true
+
+      - name: Create artifact bundle index
+        run: python3 native/bundle.py index --dist all/dist
+
+      - name: Upload bundles and index
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: skia-bundles
+          path: |
+            all/dist/*.zip
+            all/dist/skia.artifactbundleindex
+            all/dist/skia.artifactbundleindex.sha256
+          retention-days: 7

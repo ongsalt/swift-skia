@@ -1,75 +1,101 @@
 #!/usr/bin/env python3
-"""Packages libSkiaSharp.a + the C API headers as a SwiftPM (SE-0482) artifact bundle.
+"""Packages build.sh output as SwiftPM (SE-0482) static-library artifact bundles.
 
-usage: bundle.py --lib <out>/libSkiaSharp.a --skia-src <skia-src> --version <v> --dist dist
+One bundle per target; an .artifactbundleindex points SwiftPM at the right one
+by triple.
 
-Produces:
-  dist/skia-linux.artifactbundle.zip
-  dist/skia-linux.artifactbundle.zip.sha256   (what `swift package compute-checksum` prints)
+usage:
+  bundle.py bundle <builds/name> --version <v> --dist dist
+      -> dist/skia-<name>.artifactbundle.zip
+         dist/skia-<name>.entry.json        (this zip's line in the index)
+  bundle.py index --dist dist
+      -> dist/skia.artifactbundleindex      (from every dist/*.entry.json)
+         dist/skia.artifactbundleindex.sha256
 """
 import argparse
 import hashlib
 import json
 import pathlib
 import shutil
-import subprocess
 import zipfile
 
-BUNDLE = "skia-linux.artifactbundle"
-VARIANT = "x86_64-linux"
-TRIPLES = ["x86_64-unknown-linux-gnu"]
+
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--lib", required=True, type=pathlib.Path)
-    ap.add_argument("--skia-src", required=True, type=pathlib.Path)
-    ap.add_argument("--version", required=True)
-    ap.add_argument("--dist", required=True, type=pathlib.Path)
-    args = ap.parse_args()
-
-    root = args.dist / BUNDLE
+def bundle(stage: pathlib.Path, version: str, dist: pathlib.Path) -> None:
+    manifest = json.loads((stage / "manifest.json").read_text())
+    name = f"skia-{manifest['name']}.artifactbundle"
+    root = dist / name
     if root.exists():
         shutil.rmtree(root)
-    variant = root / VARIANT
-    variant.mkdir(parents=True)
+    root.mkdir(parents=True)
 
-    shutil.copy2(args.lib, variant / "libSkiaSharp.a")
-
-    # The headers include each other as "include/c/...", so the header search
-    # path must be the directory that contains include/.
-    headers = variant / "headers"
-    for sub in ("include/c", "include/xamarin"):
-        shutil.copytree(args.skia_src / sub, headers / sub, ignore=shutil.ignore_patterns("*.cpp", "Sk*.h"))
-
-    commit = subprocess.check_output(["git", "-C", str(args.skia_src), "rev-parse", "HEAD"], text=True).strip()
-    (root / "skia_version.json").write_text(json.dumps({"mono_skia_commit": commit, "version": args.version}, indent=2) + "\n")
+    variant = root / manifest["name"]
+    variant.mkdir()
+    shutil.copy2(stage / manifest["library"], variant / manifest["library"])
+    # The headers include each other as "include/c/...", so the search path is
+    # the directory containing include/.
+    shutil.copytree(stage / "include", variant / "headers" / "include")
 
     info = {
         "schemaVersion": "1.0",
         "artifacts": {
             "SkiaSharp": {
-                "version": args.version,
+                "version": version,
                 "type": "staticLibrary",
                 "variants": [{
-                    "path": f"{VARIANT}/libSkiaSharp.a",
-                    "staticLibraryMetadata": {"headerPaths": [f"{VARIANT}/headers"]},
-                    "supportedTriples": TRIPLES,
+                    "path": f"{manifest['name']}/{manifest['library']}",
+                    "staticLibraryMetadata": {"headerPaths": [f"{manifest['name']}/headers"]},
+                    "supportedTriples": manifest["supportedTriples"],
                 }],
             }
         },
     }
     (root / "info.json").write_text(json.dumps(info, indent=2) + "\n")
+    (root / "skia_version.json").write_text(
+        json.dumps({"version": version, "mono_skia_commit": manifest["skiaCommit"]}, indent=2) + "\n")
 
-    zip_path = args.dist / f"{BUNDLE}.zip"
+    zip_path = dist / f"{name}.zip"
     zip_path.unlink(missing_ok=True)
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(root.rglob("*")):
-            z.write(f, f.relative_to(args.dist))
+            z.write(f, f.relative_to(dist))
+    shutil.rmtree(root)
 
-    digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-    pathlib.Path(f"{zip_path}.sha256").write_text(digest + "\n")
-    print(f"{zip_path} {zip_path.stat().st_size // (1 << 20)} MiB sha256={digest}")
+    entry = {"fileName": zip_path.name, "checksum": sha256(zip_path),
+             "supportedTriples": manifest["supportedTriples"]}
+    (dist / f"skia-{manifest['name']}.entry.json").write_text(json.dumps(entry, indent=2) + "\n")
+    print(f"{zip_path} {zip_path.stat().st_size >> 20} MiB sha256={entry['checksum']}")
+
+
+def index(dist: pathlib.Path) -> None:
+    entries = [json.loads(p.read_text()) for p in sorted(dist.glob("*.entry.json"))]
+    if not entries:
+        raise SystemExit(f"no *.entry.json in {dist}")
+    path = dist / "skia.artifactbundleindex"
+    path.write_text(json.dumps({"schemaVersion": "1.0", "archives": entries}, indent=2) + "\n")
+    digest = sha256(path)
+    pathlib.Path(f"{path}.sha256").write_text(digest + "\n")
+    print(f"{path} ({len(entries)} archives) sha256={digest}")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    b = sub.add_parser("bundle")
+    b.add_argument("stage", type=pathlib.Path)
+    b.add_argument("--version", required=True)
+    b.add_argument("--dist", required=True, type=pathlib.Path)
+    i = sub.add_parser("index")
+    i.add_argument("--dist", required=True, type=pathlib.Path)
+    args = ap.parse_args()
+
+    if args.cmd == "bundle":
+        bundle(args.stage, args.version, args.dist)
+    else:
+        index(args.dist)
 
 
 if __name__ == "__main__":
