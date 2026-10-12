@@ -11,15 +11,22 @@ import Testing
 		}
 		deinit { vkts_destroy(&raw) }
 
-		var name: String { withUnsafeBytes(of: raw.deviceName) { String(cString: $0.bindMemory(to: CChar.self).baseAddress!) } }
+		var name: String {
+			withUnsafeBytes(of: raw.deviceName) {
+				String(cString: $0.bindMemory(to: CChar.self).baseAddress!)
+			}
+		}
 
 		var backend: SKGraphiteVulkanBackend {
 			SKGraphiteVulkanBackend(
-				instance: OpaquePointer(raw.instance), physicalDevice: OpaquePointer(raw.physicalDevice),
+				instance: OpaquePointer(raw.instance),
+				physicalDevice: OpaquePointer(raw.physicalDevice),
 				device: OpaquePointer(raw.device), queue: OpaquePointer(raw.queue),
 				graphicsQueueIndex: raw.queueFamily, maxAPIVersion: raw.apiVersion,
-				getInstanceProcAddr: unsafeBitCast(raw.getInstanceProcAddr, to: SKVkGetInstanceProcAddr.self),
-				getDeviceProcAddr: unsafeBitCast(raw.getDeviceProcAddr, to: SKVkGetDeviceProcAddr.self))
+				getInstanceProcAddr: unsafeBitCast(
+					raw.getInstanceProcAddr, to: SKVkGetInstanceProcAddr.self),
+				getDeviceProcAddr: unsafeBitCast(
+					raw.getDeviceProcAddr, to: SKVkGetDeviceProcAddr.self))
 		}
 	}
 
@@ -41,16 +48,15 @@ import Testing
 			Issue.record("makeRecorder failed")
 			return
 		}
-		let info = SKImageInfo(colorspace: nil, width: 8, height: 8, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(
+			colorspace: nil, width: 8, height: 8, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.renderTarget(&recorder, info))
 
 		let paint = SKPaint()
 		paint.color = 0xFFFF_0000
-		do {
-			let canvas = surface.canvas
-			canvas.clear(0xFF00_00FF)
-			canvas.drawRect(0, 0, 4, 8, paint)
-		}
+		let canvas = surface.canvas
+		canvas.clear(0xFF00_00FF)
+		canvas.drawRect(0, 0, 4, 8, paint)
 
 		guard let recording = recorder.snap() else {
 			Issue.record("nothing recorded")
@@ -63,7 +69,9 @@ import Testing
 
 		let read = context.readPixels(surface, info)
 		let (pixels, rowBytes) = try #require(read)
-		func pixel(_ x: Int, _ y: Int) -> [UInt8] { Array(pixels[(y * rowBytes + x * 4)..<(y * rowBytes + x * 4 + 4)]) }
+		func pixel(_ x: Int, _ y: Int) -> [UInt8] {
+			Array(pixels[(y * rowBytes + x * 4)..<(y * rowBytes + x * 4 + 4)])
+		}
 		#expect(pixel(0, 0) == [0xFF, 0x00, 0x00, 0xFF])  // left half: red (RGBA bytes)
 		#expect(pixel(7, 7) == [0x00, 0x00, 0xFF, 0xFF])  // right half: blue
 	}
@@ -78,7 +86,8 @@ import Testing
 			Issue.record("makeRecorder failed")
 			return
 		}
-		let info = SKImageInfo(colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(
+			colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.renderTarget(&recorder, info))
 		surface.canvas.clear(0xFF00_FF00)
 		guard let recording = recorder.snap() else {

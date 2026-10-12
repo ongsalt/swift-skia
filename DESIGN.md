@@ -269,7 +269,7 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 2. **Done:** `Package.swift` with the binaryTarget pointing at the release's `.artifactbundleindex`; raster tests and the `WriteImage` example.
 3. The generator (`gen_apinotes.py`): apinotes and `CSkia.h`. Generated Swift overloads come after v1.
 4. **Done:** the hand-written layer: `SKPaint`, `SKPath`, `SKPathBuilder`, `SKFont` (`final class`es), and `SKCanvas` (`~Copyable` + `~Escapable`, from `surface.canvas`).
-5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Still to do: wrapping caller-owned `VkImage`s (`SKGraphiteBackendTexture`) for swapchains.
+5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Caller-owned `VkImage`s wrap through `SKGraphiteBackendTexture` and `SKSurface.wrapBackendTexture(_:_:_:_:_:)`; `Examples/VulkanWindow` (a separate package needing SDL3) draws into a swapchain this way. The C API can't pass Graphite a final image layout or semaphores, so the example submits synchronously and moves the image from `COLOR_ATTACHMENT_OPTIMAL` to `PRESENT_SRC_KHR` itself; the validation layers report no errors with that.
 
 ## 8. Risks and open items
 

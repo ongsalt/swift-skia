@@ -969,6 +969,14 @@ Functions:
 - Name: sk_get_surface
   SwiftReturnOwnership: unretained
   SwiftPrivate: true
+- Name: sk_graphite_backend_texture_delete
+  SwiftPrivate: true
+- Name: sk_graphite_backend_texture_get_backend
+  SwiftPrivate: true
+- Name: sk_graphite_backend_texture_get_dimensions
+  SwiftPrivate: true
+- Name: sk_graphite_backend_texture_is_valid
+  SwiftPrivate: true
 - Name: sk_graphite_context_async_rescale_and_read_pixels_surface
   SwiftPrivate: true
 - Name: sk_graphite_context_check_async_work_completion
@@ -1028,6 +1036,8 @@ Functions:
   SwiftPrivate: true
 - Name: sk_graphite_surface_wrap_backend_texture
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
+- Name: sk_graphite_vk_backend_texture_new
   SwiftPrivate: true
 - Name: sk_image_async_rescale_and_read_pixels
   SwiftName: SKImage.asyncRescaleAndReadPixels(self:_:_:_:_:_:_:)

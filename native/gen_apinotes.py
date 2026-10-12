@@ -43,6 +43,7 @@ EXCLUDED_HEADERS = {
 HAND_WRITTEN = {
     "sk_canvas_t", "sk_paint_t", "sk_path_t", "sk_pathbuilder_t", "sk_font_t",
     "sk_graphite_context_t", "sk_graphite_recorder_t", "sk_graphite_recording_t",
+    "sk_graphite_backend_texture_t",
 }
 
 # Base classes, not types of their own.

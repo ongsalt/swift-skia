@@ -82,12 +82,16 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 
 	// MARK: Clip
 
-	public func clipRect(_ rect: SKRect, _ operation: SKClipOperation = .intersect, _ antialias: Bool = false) {
+	public func clipRect(
+		_ rect: SKRect, _ operation: SKClipOperation = .intersect, _ antialias: Bool = false
+	) {
 		var rect = rect
 		__sk_canvas_clip_rect_with_operation(handle, &rect, operation, antialias)
 	}
 
-	public func clipPath(_ path: SKPath, _ operation: SKClipOperation = .intersect, _ antialias: Bool = false) {
+	public func clipPath(
+		_ path: SKPath, _ operation: SKClipOperation = .intersect, _ antialias: Bool = false
+	) {
 		__sk_canvas_clip_path_with_operation(handle, path.handle, operation, antialias)
 	}
 
@@ -155,7 +159,8 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_draw_rect(handle, &rect, paint.handle)
 	}
 
-	public func drawRect(_ x: Float, _ y: Float, _ width: Float, _ height: Float, _ paint: SKPaint) {
+	public func drawRect(_ x: Float, _ y: Float, _ width: Float, _ height: Float, _ paint: SKPaint)
+	{
 		drawRect(SKRect(left: x, top: y, right: x + width, bottom: y + height), paint)
 	}
 
@@ -177,7 +182,10 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_draw_circle(handle, center.x, center.y, radius, paint.handle)
 	}
 
-	public func drawArc(_ oval: SKRect, _ startAngle: Float, _ sweepAngle: Float, _ useCenter: Bool, _ paint: SKPaint) {
+	public func drawArc(
+		_ oval: SKRect, _ startAngle: Float, _ sweepAngle: Float, _ useCenter: Bool,
+		_ paint: SKPaint
+	) {
 		var oval = oval
 		__sk_canvas_draw_arc(handle, &oval, startAngle, sweepAngle, useCenter, paint.handle)
 	}
@@ -187,7 +195,8 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	}
 
 	public func drawImage(
-		_ image: SKImage, _ x: Float, _ y: Float, _ sampling: SKSamplingOptions = SKSamplingOptions(),
+		_ image: SKImage, _ x: Float, _ y: Float,
+		_ sampling: SKSamplingOptions = SKSamplingOptions(),
 		_ paint: SKPaint? = nil
 	) {
 		var sampling = sampling
@@ -203,7 +212,8 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	}
 
 	public func drawImage(
-		_ image: SKImage, _ source: SKRect, _ dest: SKRect, _ sampling: SKSamplingOptions = SKSamplingOptions(),
+		_ image: SKImage, _ source: SKRect, _ dest: SKRect,
+		_ sampling: SKSamplingOptions = SKSamplingOptions(),
 		_ paint: SKPaint? = nil
 	) {
 		var (source, dest, sampling) = (source, dest, sampling)
@@ -213,7 +223,8 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	public func drawText(_ text: String, _ x: Float, _ y: Float, _ font: SKFont, _ paint: SKPaint) {
 		var text = text
 		text.withUTF8 { utf8 in
-			__sk_canvas_draw_simple_text(handle, utf8.baseAddress, utf8.count, .utf8, x, y, font.handle, paint.handle)
+			__sk_canvas_draw_simple_text(
+				handle, utf8.baseAddress, utf8.count, .utf8, x, y, font.handle, paint.handle)
 		}
 	}
 
@@ -221,8 +232,12 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_draw_text_blob(handle, blob, x, y, paint.handle)
 	}
 
-	public func drawPicture(_ picture: SKPicture, _ matrix: SKMatrix? = nil, _ paint: SKPaint? = nil) {
-		guard var matrix else { return __sk_canvas_draw_picture(handle, picture, nil, paint?.handle) }
+	public func drawPicture(
+		_ picture: SKPicture, _ matrix: SKMatrix? = nil, _ paint: SKPaint? = nil
+	) {
+		guard var matrix else {
+			return __sk_canvas_draw_picture(handle, picture, nil, paint?.handle)
+		}
 		__sk_canvas_draw_picture(handle, picture, &matrix, paint?.handle)
 	}
 }
