@@ -12,8 +12,8 @@ on:
       artifact_id:
         description: "Artifact ID holding every bundle zip and the index"
         value: ${{ jobs.index.outputs.artifact_id }}
+  workflow_dispatch:
   push:
-    branches: [main]
     paths: [native/**, .github/workflows/skia.yaml]
   pull_request:
     paths: [native/**, .github/workflows/skia.yaml]
