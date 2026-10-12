@@ -969,14 +969,66 @@ Functions:
 - Name: sk_get_surface
   SwiftReturnOwnership: unretained
   SwiftPrivate: true
+- Name: sk_graphite_context_async_rescale_and_read_pixels_surface
+  SwiftPrivate: true
+- Name: sk_graphite_context_check_async_work_completion
+  SwiftPrivate: true
+- Name: sk_graphite_context_delete
+  SwiftPrivate: true
+- Name: sk_graphite_context_delete_backend_texture
+  SwiftPrivate: true
+- Name: sk_graphite_context_free_gpu_resources
+  SwiftPrivate: true
+- Name: sk_graphite_context_get_backend
+  SwiftPrivate: true
+- Name: sk_graphite_context_get_current_budgeted_bytes
+  SwiftPrivate: true
+- Name: sk_graphite_context_get_max_budgeted_bytes
+  SwiftPrivate: true
+- Name: sk_graphite_context_get_max_texture_size
+  SwiftPrivate: true
+- Name: sk_graphite_context_insert_recording
+  SwiftPrivate: true
+- Name: sk_graphite_context_is_device_lost
+  SwiftPrivate: true
+- Name: sk_graphite_context_make_recorder
+  SwiftPrivate: true
+- Name: sk_graphite_context_make_vulkan
+  SwiftPrivate: true
+- Name: sk_graphite_context_perform_deferred_cleanup
+  SwiftPrivate: true
+- Name: sk_graphite_context_set_max_budgeted_bytes
+  SwiftPrivate: true
+- Name: sk_graphite_context_submit
+  SwiftPrivate: true
+- Name: sk_graphite_context_supports_protected_content
+  SwiftPrivate: true
 - Name: sk_graphite_image_make_texture
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
 - Name: sk_graphite_image_wrap_texture
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_create_backend_texture
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_delete
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_delete_backend_texture
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_get_backend
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_get_max_texture_size
+  SwiftPrivate: true
+- Name: sk_graphite_recorder_snap
+  SwiftPrivate: true
+- Name: sk_graphite_recording_delete
+  SwiftPrivate: true
 - Name: sk_graphite_surface_make_render_target
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
 - Name: sk_graphite_surface_wrap_backend_texture
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
 - Name: sk_image_async_rescale_and_read_pixels
   SwiftName: SKImage.asyncRescaleAndReadPixels(self:_:_:_:_:_:_:)
 - Name: sk_image_get_alpha_type

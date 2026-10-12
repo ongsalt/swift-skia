@@ -54,10 +54,16 @@ let package = Package(
 			],
 			path: "Examples/WriteImage"
 		),
+		.target(
+			name: "CVulkanTestSupport",
+			path: "Tests/CVulkanTestSupport",
+			linkerSettings: [.linkedLibrary("vulkan")]
+		),
 		.testTarget(
 			name: "SkiaTests",
 			dependencies: [
 				"Skia",
+				"CVulkanTestSupport",
 			]
 		),
 	]

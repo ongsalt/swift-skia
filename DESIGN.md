@@ -269,7 +269,7 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 2. **Done:** `Package.swift` with the binaryTarget pointing at the release's `.artifactbundleindex`; raster tests and the `WriteImage` example.
 3. The generator (`gen_apinotes.py`): apinotes and `CSkia.h`. Generated Swift overloads come after v1.
 4. **Done:** the hand-written layer: `SKPaint`, `SKPath`, `SKPathBuilder`, `SKFont` (`final class`es), and `SKCanvas` (`~Copyable` + `~Escapable`, from `surface.canvas`).
-5. Graphite on Vulkan: Context, Recorder, Recording, render-target and wrapped surfaces. Tests on lavapipe.
+5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Still to do: wrapping caller-owned `VkImage`s (`SKGraphiteBackendTexture`) for swapchains.
 
 ## 8. Risks and open items
 

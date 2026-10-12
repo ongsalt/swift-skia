@@ -40,7 +40,10 @@ EXCLUDED_HEADERS = {
 }
 
 # Owned (new/delete) types wrapped by hand in Sources/Skia; their C functions become __sk_*.
-HAND_WRITTEN = {"sk_canvas_t", "sk_paint_t", "sk_path_t", "sk_pathbuilder_t", "sk_font_t"}
+HAND_WRITTEN = {
+    "sk_canvas_t", "sk_paint_t", "sk_path_t", "sk_pathbuilder_t", "sk_font_t",
+    "sk_graphite_context_t", "sk_graphite_recorder_t", "sk_graphite_recording_t",
+}
 
 # Base classes, not types of their own.
 NOT_REFCOUNTED = {"sk_refcnt_t", "sk_nvrefcnt_t"}
