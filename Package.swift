@@ -6,17 +6,19 @@ import PackageDescription
 // Prebuilt Skia from the "Release Skia" workflow (one bundle per target, see native/).
 // Set SWIFT_SKIA_LOCAL_BUNDLE to a local skia-<target>.artifactbundle directory,
 // relative to this package, to test a CI build artifact instead.
-let localBundle = ProcessInfo.processInfo.environment["SWIFT_SKIA_LOCAL_BUNDLE"].flatMap { $0.isEmpty ? nil : $0 }
+let localBundle = ProcessInfo.processInfo.environment["SWIFT_SKIA_LOCAL_BUNDLE"].flatMap {
+	$0.isEmpty ? nil : $0
+}
 
 let skiaLib: Target =
 	if let localBundle {
 		.binaryTarget(name: "SkiaLib", path: localBundle)
 	} else {
-		// TODO: fill in after the first "Release Skia" run.
 		.binaryTarget(
 			name: "SkiaLib",
-			url: "https://github.com/ongsalt/swift-skia/releases/download/skia-a9e4fac6f758/skia.artifactbundleindex",
-			checksum: "0000000000000000000000000000000000000000000000000000000000000000"
+			url:
+				"https://github.com/ongsalt/swift-skia/releases/download/skia-a9e4fac6f758/skia.artifactbundleindex",
+			checksum: "280364e91cb5356969941fd7ca14d07f226068cef996c6a63622015abddc44d8"
 		)
 	}
 

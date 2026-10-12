@@ -21,3 +21,5 @@ smoke
 .idea/
 .DS_Store
 ref/
+
+__pycache__

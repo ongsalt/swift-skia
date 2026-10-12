@@ -150,7 +150,7 @@ Verified on Swift 6.4 in plain C mode (no C++ interop):
 | Mechanism | Result |
 |---|---|
 | `SwiftImportAs: reference` + `SwiftRetainOp: sk_x_ref` / `SwiftReleaseOp: sk_x_unref` | The C opaque type imports as a Swift class; ARC calls ref/unref |
-| `SwiftName: Image.init(...)`, `Image.width(self:)`, `getter:` | C functions become initializers, methods and properties |
+| `SwiftName: SKImage.fromEncoded(_:)`, `SKImage.makeShader(self:_:_:_:_:)`, `getter:`/`setter:` | C functions become static factories, methods and properties |
 | `NullabilityOfRet` / `Nullability` in apinotes | Non-optional results without touching the headers |
 | Tag redeclaration with `swift_attr("@Sendable")` | The type conforms to `Sendable` |
 | `SwiftRetainOp: immortal` | Borrowed pointers import as classes without retain/release |
@@ -177,33 +177,63 @@ The SkiaSharp C API has about 20 **ref-counted** types (they have `_ref`/`_unref
 |---|---|---|---|
 | Ref-counted | Image, Shader, Surface, Typeface, Data, ColorSpace, ColorFilter, ImageFilter, MaskFilter, PathEffect, Blender, Picture, TextBlob, Vertices, RuntimeEffect, FontMgr | Swift classes straight from apinotes | **generated** |
 | Simple data structs and enums | `sk_rect_t`, `sk_point_t`, `sk_matrix_t`, `sk_color4f_t`, `sk_imageinfo_t`, enums | Renamed via apinotes (`Rect`, `Point`, …); small Swift extensions add initializers and operators | generated, plus a few small extensions |
-| Owned and passed to other calls | Paint, Path, PathBuilder, Font | `final class` that wraps the pointer, with `deinit` calling `_delete`, and one-line forwarding methods | **hand-written** |
-| Borrowed | Canvas (from a surface) | `~Escapable` struct from `surface.canvas`, whose lifetime depends on the surface (`@_lifetime(borrow self)`), so it can't outlive it | **hand-written** |
-| Graphite | Context, Recorder, Recording, BackendTexture, TextureInfo | Context and Recorder are `final class` (not `Sendable`); Recording is `~Copyable` and consumed by `insert` | **hand-written** |
+| Owned and passed to other calls | Paint, Path, PathBuilder, Font | `final class` that wraps the pointer, with `deinit` calling `_delete`, properties for get/set pairs, and one-line forwarding methods. Reference semantics like the C API; `copy()` via `sk_*_clone` | **hand-written** |
+| Borrowed | Canvas (from a surface or picture recorder), iterators, byte views | `~Escapable` views whose lifetime depends on their owner; see **Lifetimes** below | **hand-written** |
+| Graphite | Context, Recorder, Recording, BackendTexture, TextureInfo | Unique owners, as in rust-skia: `~Copyable` structs whose `deinit` deletes the handle. `insert` borrows the recording, which can be inserted again | **hand-written** |
 
 Paint, Path, Font and Canvas are hand-written for one reason: the C functions that use them take raw `sk_paint_t*` and similar pointers. Apinotes can't put a method that takes our wrapper type onto Canvas, and owned types can't be imported as ref-counted classes. These five types are most of the hand-written Swift in v1.
 
 **Generator rule:** a C function becomes public API through apinotes only if its shape is already fine. Otherwise it's marked `SwiftPrivate` (so it imports as `__sk_…`), and either a generated Swift overload or the hand-written layer calls it. Functions that take an owned type (Paint, Path, Font) always go through a wrapper.
 
-**Later, not v1:** copy-on-write `struct Paint` and `struct Path` (`sk_paint_clone` and `sk_path_clone` already exist), and generating the forwarding wrappers from `swift-synthesize-interface` output.
+**API style:**
+- Types keep SkiaSharp's `SK` prefix.
+- Skia's own API has no argument labels: methods and factories take `_:` throughout, so constructor variants are unlabeled static factories (`SKImage.fromEncoded(_:)`, `SKSurface.raster(_:_:_:)`). Only overloads we add have labels.
+- Accessors are properties, never `getX()`/`setX(_:)` methods.
+- No copy-on-write: owned types have reference semantics, as in the C API.
+
+**Later, not v1:** generating the forwarding wrappers from `swift-synthesize-interface` output.
+
+### Lifetimes: follow rust-skia
+
+rust-skia has already decided which Skia objects depend on which (`ref/rust-skia/skia-safe`). We use the same dependencies, expressed with Swift 6.4's `~Escapable` + `@_lifetime`:
+
+| rust-skia | Used for | Swift |
+|---|---|---|
+| `fn canvas(&mut self) -> &Canvas` | `Surface::canvas`, `PictureRecorder::begin_recording`, `Document::canvas`, Graphite `Recorder::make_deferred_canvas` | `var canvas: SKCanvas { @_lifetime(&self) mutating get }`, the same shape as the standard library's `Array.mutableSpan`. `SKCanvas` is `~Copyable` and `~Escapable` and never deletes the canvas. The owner must be a `var`, like Rust's `let mut` |
+| `fn as_bytes(&self) -> &[u8]` | `Data::as_bytes`, pixel access | `Span<UInt8>` with `@_lifetime(borrow self)` |
+| `Iter<'a>` with `PhantomData<&'a Path>` | path, region and text blob iterators | `~Escapable` iterator struct with `@_lifetime(borrow path)` |
+| `BorrowedRecorder<'a>` | `Canvas::recorder()` | `~Escapable` recorder view tied to the canvas, which doesn't delete the recorder |
+| `RefHandle<T>` (unique owner, no `Clone`) | Graphite `Context`, `Recorder`, `Recording` | `~Copyable` struct with `deinit` |
+| `Handle<T>` (value with `Clone`) | `Paint`, `Path`, `Font` | `final class` with `copy()`; reference semantics, no copy-on-write |
+| `RCHandle<T>` | `Image`, `Shader`, `Surface`, … | generated ARC class |
+| `OwnedCanvas<'pixels>`, `Borrows<'pixels, Surface>` | canvases and surfaces over caller-owned pixels | later |
+
+Graphite surfaces are plain `SKSurface`s with no dependency on their recorder, matching rust-skia's `graphite::surface::render_target(&mut Recorder, …) -> Option<Surface>`.
+
+How the `&mut self` case works in Swift 6.4 (tested):
+- **Exclusivity:** while the canvas is alive, any other use of the surface variable is a compile error (`overlapping accesses … requires exclusive access`). The access ends at the canvas's last use, as with Rust's non-lexical lifetimes.
+- **Why `~Copyable`:** a *copyable* `~Escapable` view keeps the access open until the end of its lexical scope, rejecting code after its last use. `~Copyable` gives last-use behavior, which is also why the standard library's `MutableSpan` is `~Copyable`.
+- **Classes:** classes can't declare `mutating` accessors, so `SKSurface` (an imported reference type) gets `canvas` from a protocol extension constrained to `Self == SKSurface`, which may declare one. As with Rust's `&mut` on a cloneable `RCHandle`, exclusivity covers the variable, not the object: another reference to the same surface can still be used.
+- **Escaping:** returning a view out of the function is a compile error.
+- **Swift 6.4 status:** `@_lifetime` is still experimental (`Lifetimes` feature, proposal under review as swift-evolution PR #3145). SE-0507's `borrow`/`mutate` accessors don't fit here: they must return stored storage and aren't allowed on classes.
 
 ### Graphite on Vulkan: the device is passed in
 
 ```swift
 import Skia
 
-let ctx = try GraphiteContext(vulkan: .init(
+let ctx = try SKGraphiteContext.vulkan(.init(
   instance: vkInstance, physicalDevice: vkPhysicalDevice, device: vkDevice,
   queue: vkQueue, graphicsQueueIndex: queueFamily, maxAPIVersion: apiVersion,
   getProc: vkGetInstanceProcAddr))           // -> sk_graphite_context_make_vulkan
 
 let recorder = ctx.makeRecorder()
-let surface = try Surface.renderTarget(recorder, info: .init(width: 800, height: 600, colorType: .rgba8888))
-// or: Surface.wrap(recorder, backendTexture: .vulkan(image: swapchainImage, …))
+let surface = try SKSurface.renderTarget(recorder, info, false, nil)
+// or: SKSurface.wrap(recorder, backendTexture, …)
 let canvas = surface.canvas           // ~Escapable: can't outlive `surface`
 canvas.clear(.white)
-canvas.drawCircle(center: .init(x: 400, y: 300), radius: 100, paint: paint)
-if let recording = recorder.snap() { ctx.insert(recording) }   // consuming
+canvas.drawCircle(400, 300, 100, paint)
+if let recording = recorder.snap() { ctx.insert(recording) }   // borrows; can be inserted again
 ctx.submit()
 ```
 
@@ -215,7 +245,7 @@ Our layer translates the caller's `vkGetInstanceProcAddr` into SkiaSharp's `sk_g
 
 1. **Input:** `clang -Xclang -ast-dump=json -fsyntax-only` run over `CSkia.h` with the bundle's include path. We use the toolchain's clang, so there's no libclang dependency.
 2. **Classify types:** a type with `X_ref`/`X_unref` is ref-counted; a type with `X_new`/`X_delete` is owned. `sk_refcnt_t` and `sk_nvrefcnt_t` are base types.
-3. **Name things:** strip prefixes (`sk_image_t` → `Image`; `SK_COLORTYPE_RGBA_8888` → `.rgba8888`). The first parameter becomes `self`, `_new_*` functions become initializers, and `get_*` with no arguments becomes a getter.
+3. **Name things:** types and enum cases take SkiaSharp's names from its generated C# (`sk_colortype_t` → `SKColorType`, `RGBA_8888_SK_COLORTYPE` → `.rgba8888`), with an override table for the few it lacks. The first parameter becomes `self`. `sk_x_new_foo(...)` becomes the static factory `SKX.foo(_:...)`, and plain `sk_x_new(...)` becomes `init(_:...)`. `get_foo` becomes a property, settable when a matching `set_foo` exists, and `is_*`/`has_*` become `Bool` properties. No argument labels.
 4. **Overrides:** `apinotes-overrides.yaml` fixes names, nullability (the headers have none, so a default plus exceptions) and functions to skip.
 5. **Output (v1):** `CSkia.apinotes` and `CSkia.h`: ref-counted classes, enums and option sets, renames, nullability, and `SwiftPrivate` for wrapped functions.
 6. **Later:** `Sources/Skia/Generated/*.swift` with overloads for the struct-pointer, out-parameter, array, string and callback patterns in §3. The raw functions stay callable until then.

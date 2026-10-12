@@ -45,16 +45,19 @@ HAND_WRITTEN = {"sk_canvas_t", "sk_paint_t", "sk_path_t", "sk_pathbuilder_t", "s
 # Base classes, not types of their own.
 NOT_REFCOUNTED = {"sk_refcnt_t", "sk_nvrefcnt_t"}
 
-# Swift names for ref-counted types where "SK" + PascalCase(words) is wrong.
-CLASS_NAMES = {
+# Swift names where neither SkiaSharp's generated C# nor "SK" + PascalCase(words) fits.
+TYPE_NAMES = {
     "sk_colorfilter_t": "SKColorFilter",
     "sk_colorspace_t": "SKColorSpace",
     "sk_fontmgr_t": "SKFontManager",
     "sk_fontstyleset_t": "SKFontStyleSet",
     "sk_imagefilter_t": "SKImageFilter",
+    "sk_jpegencoder_options_t": "SKJpegEncoderOptions",
     "sk_maskfilter_t": "SKMaskFilter",
+    "sk_pngencoder_options_t": "SKPngEncoderOptions",
     "sk_runtimeeffect_t": "SKRuntimeEffect",
     "sk_textblob_t": "SKTextBlob",
+    "sk_webpencoder_options_t": "SKWebpEncoderOptions",
 }
 
 # Immutable once created, so safe to share across threads.
@@ -234,7 +237,7 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
     tags, typedef_notes, enumerators = [], [], []
     class_names = {}
     for t in sorted(refcounted):
-        swift = CLASS_NAMES.get(t, mechanical_type_name(t))
+        swift = TYPE_NAMES.get(t, mechanical_type_name(t))
         if claim(swift, t):
             class_names[t] = swift
             tags.append({"Name": t, "SwiftName": swift, "SwiftImportAs": "reference",
@@ -245,7 +248,7 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
         if kind not in ("enum", "struct"):
             continue
         cs = cs_types.get(t)
-        swift = cs[0] if cs else mechanical_type_name(t)
+        swift = TYPE_NAMES.get(t) or (cs[0] if cs else mechanical_type_name(t))
         if not claim(swift, t):
             continue
         if kind == "enum":
@@ -263,6 +266,7 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
     # Functions.
     receivers = sorted(class_names, key=lambda t: -len(t))  # longest prefix wins
     gr = re.compile(r"\bgr_\w+_t\b")
+    getters = getter_types(functions, receivers, typedefs)
     fn_notes, method_names = [], set()
     for t, shim in sorted(ref_shims.items()):
         if t in class_names:
@@ -281,7 +285,7 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
         elif any(pointee(t) in HAND_WRITTEN for t in types):
             note["SwiftPrivate"] = "true"
         else:
-            swift = swift_name(name, fn, receivers, class_names, typedefs)
+            swift = swift_name(name, fn, receivers, class_names, typedefs, getters)
             if swift and swift not in method_names:
                 method_names.add(swift)
                 note["SwiftName"] = swift
@@ -298,38 +302,67 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
           f"{sum('Availability' in n for n in fn_notes)} hidden")
 
 
-def swift_name(name: str, fn: dict, receivers: list[str], class_names: dict[str, str], typedefs: dict) -> str | None:
+def receiver_of(name: str, receivers: list[str], typedefs: dict) -> str | None:
     receiver = next((t for t in receivers if name.startswith(t[:-1])), None)
-    if not receiver:
-        return None
     # sk_textblob_builder_new belongs to sk_textblob_builder_t, not sk_textblob_t.
-    if any(len(t) > len(receiver) and name.startswith(t[:-1]) for t in typedefs):
+    if receiver and any(len(t) > len(receiver) and name.startswith(t[:-1]) for t in typedefs):
+        return None
+    return receiver
+
+
+def base_type(qual_type: str) -> str:
+    return re.sub(r"\bconst\b|\s+", "", qual_type)
+
+
+def getter_types(functions: dict, receivers: list[str], typedefs: dict) -> dict[tuple[str, str], str]:
+    """(receiver, property) -> C type, for every X_get_foo(self) that becomes a property."""
+    getters = {}
+    for name, fn in functions.items():
+        receiver = receiver_of(name, receivers, typedefs)
+        suffix = name[len(receiver) - 1:] if receiver else ""
+        if (receiver and suffix.startswith("get_") and len(fn["params"]) == 1
+                and pointee(fn["params"][0][1]) == receiver and fn["ret"] != "void"):
+            getters[(receiver, camel(suffix[4:]))] = base_type(fn["ret"])
+    return getters
+
+
+def swift_name(name: str, fn: dict, receivers: list[str], class_names: dict[str, str], typedefs: dict,
+               getters: dict[tuple[str, str], str]) -> str | None:
+    """Skia's own API gets no argument labels: methods and factories take `_:` throughout.
+    Non-throwing get/set pairs become properties instead of getX()/setX(_:)."""
+    receiver = receiver_of(name, receivers, typedefs)
+    if not receiver:
         return None
     cls, suffix = class_names[receiver], name[len(receiver) - 1:]
     params = fn["params"]
     is_method = params and pointee(params[0][1]) == receiver
     rest = params[1:] if is_method else params
+    unlabeled = "_:" * len(rest)
 
     def ok(base: str) -> bool:
         return bool(base) and base not in SWIFT_KEYWORDS and base[0].isalpha()
 
     if is_method:
-        if not rest and fn["ret"] != "void" and suffix.startswith("get_") and ok(camel(suffix[4:])):
-            return f"getter:{cls}.{camel(suffix[4:])}(self:)"
+        prop = camel(suffix[4:])
+        if not rest and fn["ret"] != "void" and suffix.startswith("get_") and ok(prop):
+            return f"getter:{cls}.{prop}(self:)"
+        if (len(rest) == 1 and fn["ret"] == "void" and suffix.startswith("set_") and ok(prop)
+                and getters.get((receiver, prop)) == base_type(rest[0][1])):
+            return f"setter:{cls}.{prop}(self:newValue:)"
         if not rest and fn["ret"] in ("bool", "_Bool") and suffix.startswith(("is_", "has_")):
             return f"getter:{cls}.{camel(suffix)}(self:)"
         base = camel(suffix)
-        return f"{cls}.{base}(self:{'_:' * len(rest)})" if ok(base) else None
+        return f"{cls}.{base}(self:{unlabeled})" if ok(base) else None
 
+    # Constructors: sk_x_new(...) -> init(_:...); sk_x_new_foo(...) -> static foo(_:...).
     if pointee(fn["ret"]) == receiver and (suffix == "new" or suffix.startswith("new_")):
-        label = camel(suffix[4:])
-        if params:
-            first = label if ok(label) else "_"
-            return f"{cls}.init({first}:{'_:' * (len(params) - 1)})"
-        return f"{cls}.{label}()" if ok(label) else f"{cls}.init()"
+        factory = camel(suffix[4:])
+        if ok(factory):
+            return f"{cls}.{factory}({unlabeled})"
+        return f"{cls}.init({unlabeled})" if suffix == "new" else None
 
     base = camel(suffix)
-    return f"{cls}.{base}({'_:' * len(params)})" if ok(base) else None
+    return f"{cls}.{base}({unlabeled})" if ok(base) else None
 
 
 def write_header(header_names: list[str], ref_shims: dict[str, str]) -> None:

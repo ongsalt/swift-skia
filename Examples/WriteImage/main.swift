@@ -11,7 +11,7 @@ let width: Int32 = 640
 let height: Int32 = 360
 
 var info = SKImageInfo(colorspace: nil, width: width, height: height, colorType: .rgba8888, alphaType: .premul)
-guard let surface = SKSurface(raster: &info, 0, nil), let canvas = __sk_surface_get_canvas(surface) else {
+guard let surface = SKSurface.raster(&info, 0, nil), let canvas = __sk_surface_get_canvas(surface) else {
 	fatalError("could not create a raster surface")
 }
 
@@ -20,8 +20,8 @@ defer { __sk_paint_delete(paint) }
 __sk_paint_set_antialias(paint, true)
 
 // Background: diagonal gradient. sk_color_t is 0xAARRGGBB.
-let gradient = SKShader(
-	linearGradient: [SKPoint(x: 0, y: 0), SKPoint(x: Float(width), y: Float(height))],
+let gradient = SKShader.linearGradient(
+	[SKPoint(x: 0, y: 0), SKPoint(x: Float(width), y: Float(height))],
 	[0xFF1E_3A8A, 0xFF9D_174D], nil, 2, .clamp, nil)
 __sk_paint_set_shader(paint, gradient)
 __sk_canvas_draw_paint(canvas, paint)
@@ -71,7 +71,7 @@ defer { sk_pixmap_destructor(pixmap) }
 guard surface.peekPixels(pixmap) else { fatalError("peekPixels failed") }
 
 let stream = sk_filewstream_new(path)!
-var options = SKPngencoderOptions()
+var options = SKPngEncoderOptions()
 options.fZLibLevel = 6
 let encoded = sk_pngencoder_encode(stream, pixmap, &options)
 sk_filewstream_destroy(stream)

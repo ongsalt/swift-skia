@@ -4,7 +4,7 @@ import Testing
 @Suite struct RasterTests {
 	@Test func drawsIntoRasterSurface() throws {
 		var info = SKImageInfo(colorspace: nil, width: 16, height: 16, colorType: .rgba8888, alphaType: .premul)
-		let surface = try #require(SKSurface(raster: &info, 0, nil))
+		let surface = try #require(SKSurface.raster(&info, 0, nil))
 
 		let canvas = try #require(__sk_surface_get_canvas(surface))
 		__sk_canvas_clear(canvas, 0xFFFF_FFFF)
@@ -24,7 +24,7 @@ import Testing
 
 	@Test func snapshotIsAnImage() throws {
 		var info = SKImageInfo(colorspace: nil, width: 4, height: 3, colorType: .rgba8888, alphaType: .premul)
-		let surface = try #require(SKSurface(raster: &info, 0, nil))
+		let surface = try #require(SKSurface.raster(&info, 0, nil))
 		let image = try #require(surface.newImageSnapshot())
 		#expect(image.width == 4)
 		#expect(image.height == 3)

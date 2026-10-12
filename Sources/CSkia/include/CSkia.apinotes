@@ -385,7 +385,7 @@ Typedefs:
 - Name: sk_jpegencoder_downsample_t
   SwiftName: SKJpegEncoderDownsample
 - Name: sk_jpegencoder_options_t
-  SwiftName: SKJpegencoderOptions
+  SwiftName: SKJpegEncoderOptions
 - Name: sk_lattice_recttype_t
   SwiftName: SKLatticeRectType
 - Name: sk_lattice_t
@@ -423,7 +423,7 @@ Typedefs:
 - Name: sk_pngencoder_filterflags_t
   SwiftName: SKPngEncoderFilterFlags
 - Name: sk_pngencoder_options_t
-  SwiftName: SKPngencoderOptions
+  SwiftName: SKPngEncoderOptions
 - Name: sk_point3_t
   SwiftName: SKPoint3
 - Name: sk_point_mode_t
@@ -475,7 +475,7 @@ Typedefs:
 - Name: sk_webpencoder_frame_t
   SwiftName: SKWebpEncoderFrame
 - Name: sk_webpencoder_options_t
-  SwiftName: SKWebpencoderOptions
+  SwiftName: SKWebpEncoderOptions
 Functions:
 - Name: cskia_colorfilter_ref
   Availability: nonswift
@@ -501,10 +501,10 @@ Functions:
   SwiftReturnOwnership: retained
 - Name: sk_blender_new_arithmetic
   SwiftReturnOwnership: retained
-  SwiftName: SKBlender.init(arithmetic:_:_:_:_:)
+  SwiftName: SKBlender.arithmetic(_:_:_:_:_:)
 - Name: sk_blender_new_mode
   SwiftReturnOwnership: retained
-  SwiftName: SKBlender.init(mode:)
+  SwiftName: SKBlender.mode(_:)
 - Name: sk_blender_ref
   Availability: nonswift
 - Name: sk_blender_unref
@@ -631,22 +631,22 @@ Functions:
   SwiftPrivate: true
 - Name: sk_colorfilter_new_color_matrix
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(colorMatrix:)
+  SwiftName: SKColorFilter.colorMatrix(_:)
 - Name: sk_colorfilter_new_compose
   SwiftReturnOwnership: retained
   SwiftName: SKColorFilter.newCompose(self:_:)
 - Name: sk_colorfilter_new_high_contrast
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(highContrast:)
+  SwiftName: SKColorFilter.highContrast(_:)
 - Name: sk_colorfilter_new_hsla_matrix
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(hslaMatrix:)
+  SwiftName: SKColorFilter.hslaMatrix(_:)
 - Name: sk_colorfilter_new_lerp
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(lerp:_:_:)
+  SwiftName: SKColorFilter.lerp(_:_:_:)
 - Name: sk_colorfilter_new_lighting
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(lighting:_:)
+  SwiftName: SKColorFilter.lighting(_:_:)
 - Name: sk_colorfilter_new_linear_to_srgb_gamma
   SwiftReturnOwnership: retained
   SwiftName: SKColorFilter.linearToSrgbGamma()
@@ -655,19 +655,19 @@ Functions:
   SwiftName: SKColorFilter.lumaColor()
 - Name: sk_colorfilter_new_mode
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(mode:_:)
+  SwiftName: SKColorFilter.mode(_:_:)
 - Name: sk_colorfilter_new_overdraw
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(overdraw:)
+  SwiftName: SKColorFilter.overdraw(_:)
 - Name: sk_colorfilter_new_srgb_to_linear_gamma
   SwiftReturnOwnership: retained
   SwiftName: SKColorFilter.srgbToLinearGamma()
 - Name: sk_colorfilter_new_table
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(table:)
+  SwiftName: SKColorFilter.table(_:)
 - Name: sk_colorfilter_new_table_argb
   SwiftReturnOwnership: retained
-  SwiftName: SKColorFilter.init(tableArgb:_:_:_:)
+  SwiftName: SKColorFilter.tableArgb(_:_:_:_:)
 - Name: sk_colorfilter_unref
   Availability: nonswift
 - Name: sk_colorspace_equals
@@ -688,13 +688,13 @@ Functions:
   SwiftName: SKColorSpace.makeSrgbGamma(self:)
 - Name: sk_colorspace_new_cicp
   SwiftReturnOwnership: retained
-  SwiftName: SKColorSpace.init(cicp:_:)
+  SwiftName: SKColorSpace.cicp(_:_:)
 - Name: sk_colorspace_new_icc
   SwiftReturnOwnership: retained
-  SwiftName: SKColorSpace.init(icc:)
+  SwiftName: SKColorSpace.icc(_:)
 - Name: sk_colorspace_new_rgb
   SwiftReturnOwnership: retained
-  SwiftName: SKColorSpace.init(rgb:_:)
+  SwiftName: SKColorSpace.rgb(_:_:)
 - Name: sk_colorspace_new_srgb
   SwiftReturnOwnership: retained
   SwiftName: SKColorSpace.srgb()
@@ -720,22 +720,22 @@ Functions:
   SwiftName: SKData.empty()
 - Name: sk_data_new_from_file
   SwiftReturnOwnership: retained
-  SwiftName: SKData.init(fromFile:)
+  SwiftName: SKData.fromFile(_:)
 - Name: sk_data_new_from_stream
   SwiftReturnOwnership: retained
-  SwiftName: SKData.init(fromStream:_:)
+  SwiftName: SKData.fromStream(_:_:)
 - Name: sk_data_new_subset
   SwiftReturnOwnership: retained
   SwiftName: SKData.newSubset(self:_:_:)
 - Name: sk_data_new_uninitialized
   SwiftReturnOwnership: retained
-  SwiftName: SKData.init(uninitialized:)
+  SwiftName: SKData.uninitialized(_:)
 - Name: sk_data_new_with_copy
   SwiftReturnOwnership: retained
-  SwiftName: SKData.init(withCopy:_:)
+  SwiftName: SKData.withCopy(_:_:)
 - Name: sk_data_new_with_proc
   SwiftReturnOwnership: retained
-  SwiftName: SKData.init(withProc:_:_:_:)
+  SwiftName: SKData.withProc(_:_:_:_:)
 - Name: sk_data_ref
   Availability: nonswift
 - Name: sk_data_unref
@@ -950,10 +950,10 @@ Functions:
   Availability: nonswift
 - Name: sk_image_new_from_bitmap
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(fromBitmap:)
+  SwiftName: SKImage.fromBitmap(_:)
 - Name: sk_image_new_from_encoded
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(fromEncoded:)
+  SwiftName: SKImage.fromEncoded(_:)
 - Name: sk_image_new_from_picture
   SwiftReturnOwnership: retained
   SwiftPrivate: true
@@ -962,16 +962,16 @@ Functions:
   Availability: nonswift
 - Name: sk_image_new_raster
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(raster:_:_:)
+  SwiftName: SKImage.raster(_:_:_:)
 - Name: sk_image_new_raster_copy
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(rasterCopy:_:_:)
+  SwiftName: SKImage.rasterCopy(_:_:_:)
 - Name: sk_image_new_raster_copy_with_pixmap
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(rasterCopyWithPixmap:)
+  SwiftName: SKImage.rasterCopyWithPixmap(_:)
 - Name: sk_image_new_raster_data
   SwiftReturnOwnership: retained
-  SwiftName: SKImage.init(rasterData:_:_:)
+  SwiftName: SKImage.rasterData(_:_:_:)
 - Name: sk_image_peek_pixels
   SwiftName: SKImage.peekPixels(self:_:)
 - Name: sk_image_read_pixels
@@ -989,117 +989,117 @@ Functions:
   Availability: nonswift
 - Name: sk_imagefilter_new_arithmetic
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(arithmetic:_:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.arithmetic(_:_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_blend
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(blend:_:_:_:)
+  SwiftName: SKImageFilter.blend(_:_:_:_:)
 - Name: sk_imagefilter_new_blender
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(blender:_:_:_:)
+  SwiftName: SKImageFilter.blender(_:_:_:_:)
 - Name: sk_imagefilter_new_blur
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(blur:_:_:_:_:)
+  SwiftName: SKImageFilter.blur(_:_:_:_:_:)
 - Name: sk_imagefilter_new_color_filter
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(colorFilter:_:_:)
+  SwiftName: SKImageFilter.colorFilter(_:_:_:)
 - Name: sk_imagefilter_new_compose
   SwiftReturnOwnership: retained
   SwiftName: SKImageFilter.newCompose(self:_:)
 - Name: sk_imagefilter_new_crop
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(crop:_:_:)
+  SwiftName: SKImageFilter.crop(_:_:_:)
 - Name: sk_imagefilter_new_dilate
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(dilate:_:_:_:)
+  SwiftName: SKImageFilter.dilate(_:_:_:_:)
 - Name: sk_imagefilter_new_displacement_map_effect
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(displacementMapEffect:_:_:_:_:_:)
+  SwiftName: SKImageFilter.displacementMapEffect(_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_distant_lit_diffuse
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(distantLitDiffuse:_:_:_:_:_:)
+  SwiftName: SKImageFilter.distantLitDiffuse(_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_distant_lit_specular
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(distantLitSpecular:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.distantLitSpecular(_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_drop_shadow
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(dropShadow:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.dropShadow(_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_drop_shadow_only
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(dropShadowOnly:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.dropShadowOnly(_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_empty
   SwiftReturnOwnership: retained
   SwiftName: SKImageFilter.empty()
 - Name: sk_imagefilter_new_erode
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(erode:_:_:_:)
+  SwiftName: SKImageFilter.erode(_:_:_:_:)
 - Name: sk_imagefilter_new_image
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(image:_:_:_:)
+  SwiftName: SKImageFilter.image(_:_:_:_:)
 - Name: sk_imagefilter_new_image_simple
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(imageSimple:_:)
+  SwiftName: SKImageFilter.imageSimple(_:_:)
 - Name: sk_imagefilter_new_magnifier
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(magnifier:_:_:_:_:_:)
+  SwiftName: SKImageFilter.magnifier(_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_matrix_convolution
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(matrixConvolution:_:_:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.matrixConvolution(_:_:_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_matrix_transform
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(matrixTransform:_:_:)
+  SwiftName: SKImageFilter.matrixTransform(_:_:_:)
 - Name: sk_imagefilter_new_merge
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(merge:_:_:)
+  SwiftName: SKImageFilter.merge(_:_:_:)
 - Name: sk_imagefilter_new_merge_simple
   SwiftReturnOwnership: retained
   SwiftName: SKImageFilter.newMergeSimple(self:_:_:)
 - Name: sk_imagefilter_new_offset
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(offset:_:_:_:)
+  SwiftName: SKImageFilter.offset(_:_:_:_:)
 - Name: sk_imagefilter_new_picture
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(picture:)
+  SwiftName: SKImageFilter.picture(_:)
 - Name: sk_imagefilter_new_picture_with_rect
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(pictureWithRect:_:)
+  SwiftName: SKImageFilter.pictureWithRect(_:_:)
 - Name: sk_imagefilter_new_point_lit_diffuse
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(pointLitDiffuse:_:_:_:_:_:)
+  SwiftName: SKImageFilter.pointLitDiffuse(_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_point_lit_specular
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(pointLitSpecular:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.pointLitSpecular(_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_shader
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(shader:_:_:)
+  SwiftName: SKImageFilter.shader(_:_:_:)
 - Name: sk_imagefilter_new_spot_lit_diffuse
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(spotLitDiffuse:_:_:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.spotLitDiffuse(_:_:_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_spot_lit_specular
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(spotLitSpecular:_:_:_:_:_:_:_:_:_:)
+  SwiftName: SKImageFilter.spotLitSpecular(_:_:_:_:_:_:_:_:_:_:)
 - Name: sk_imagefilter_new_tile
   SwiftReturnOwnership: retained
-  SwiftName: SKImageFilter.init(tile:_:_:)
+  SwiftName: SKImageFilter.tile(_:_:_:)
 - Name: sk_imagefilter_unref
   Availability: nonswift
 - Name: sk_maskfilter_new_blur
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(blur:_:)
+  SwiftName: SKMaskFilter.blur(_:_:)
 - Name: sk_maskfilter_new_blur_with_flags
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(blurWithFlags:_:_:)
+  SwiftName: SKMaskFilter.blurWithFlags(_:_:_:)
 - Name: sk_maskfilter_new_clip
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(clip:_:)
+  SwiftName: SKMaskFilter.clip(_:_:)
 - Name: sk_maskfilter_new_gamma
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(gamma:)
+  SwiftName: SKMaskFilter.gamma(_:)
 - Name: sk_maskfilter_new_shader
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(shader:)
+  SwiftName: SKMaskFilter.shader(_:)
 - Name: sk_maskfilter_new_table
   SwiftReturnOwnership: retained
-  SwiftName: SKMaskFilter.init(table:)
+  SwiftName: SKMaskFilter.table(_:)
 - Name: sk_maskfilter_ref
   Availability: nonswift
 - Name: sk_maskfilter_unref
@@ -1454,49 +1454,49 @@ Functions:
   Availability: nonswift
 - Name: sk_shader_new_blend
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(blend:_:_:)
+  SwiftName: SKShader.blend(_:_:_:)
 - Name: sk_shader_new_blender
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(blender:_:_:)
+  SwiftName: SKShader.blender(_:_:_:)
 - Name: sk_shader_new_color
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(color:)
+  SwiftName: SKShader.color(_:)
 - Name: sk_shader_new_color4f
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(color4f:_:)
+  SwiftName: SKShader.color4f(_:_:)
 - Name: sk_shader_new_empty
   SwiftReturnOwnership: retained
   SwiftName: SKShader.empty()
 - Name: sk_shader_new_linear_gradient
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(linearGradient:_:_:_:_:_:)
+  SwiftName: SKShader.linearGradient(_:_:_:_:_:_:)
 - Name: sk_shader_new_linear_gradient_color4f
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(linearGradientColor4f:_:_:_:_:_:_:)
+  SwiftName: SKShader.linearGradientColor4f(_:_:_:_:_:_:_:)
 - Name: sk_shader_new_perlin_noise_fractal_noise
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(perlinNoiseFractalNoise:_:_:_:_:)
+  SwiftName: SKShader.perlinNoiseFractalNoise(_:_:_:_:_:)
 - Name: sk_shader_new_perlin_noise_turbulence
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(perlinNoiseTurbulence:_:_:_:_:)
+  SwiftName: SKShader.perlinNoiseTurbulence(_:_:_:_:_:)
 - Name: sk_shader_new_radial_gradient
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(radialGradient:_:_:_:_:_:_:)
+  SwiftName: SKShader.radialGradient(_:_:_:_:_:_:_:)
 - Name: sk_shader_new_radial_gradient_color4f
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(radialGradientColor4f:_:_:_:_:_:_:_:)
+  SwiftName: SKShader.radialGradientColor4f(_:_:_:_:_:_:_:_:)
 - Name: sk_shader_new_sweep_gradient
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(sweepGradient:_:_:_:_:_:_:_:)
+  SwiftName: SKShader.sweepGradient(_:_:_:_:_:_:_:_:)
 - Name: sk_shader_new_sweep_gradient_color4f
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(sweepGradientColor4f:_:_:_:_:_:_:_:_:)
+  SwiftName: SKShader.sweepGradientColor4f(_:_:_:_:_:_:_:_:_:)
 - Name: sk_shader_new_two_point_conical_gradient
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(twoPointConicalGradient:_:_:_:_:_:_:_:_:)
+  SwiftName: SKShader.twoPointConicalGradient(_:_:_:_:_:_:_:_:_:)
 - Name: sk_shader_new_two_point_conical_gradient_color4f
   SwiftReturnOwnership: retained
-  SwiftName: SKShader.init(twoPointConicalGradientColor4f:_:_:_:_:_:_:_:_:_:)
+  SwiftName: SKShader.twoPointConicalGradientColor4f(_:_:_:_:_:_:_:_:_:_:)
 - Name: sk_shader_ref
   Availability: nonswift
 - Name: sk_shader_unref
@@ -1541,13 +1541,13 @@ Functions:
   Availability: nonswift
 - Name: sk_surface_new_null
   SwiftReturnOwnership: retained
-  SwiftName: SKSurface.init(null:_:)
+  SwiftName: SKSurface.null(_:_:)
 - Name: sk_surface_new_raster
   SwiftReturnOwnership: retained
-  SwiftName: SKSurface.init(raster:_:_:)
+  SwiftName: SKSurface.raster(_:_:_:)
 - Name: sk_surface_new_raster_direct
   SwiftReturnOwnership: retained
-  SwiftName: SKSurface.init(rasterDirect:_:_:_:_:_:)
+  SwiftName: SKSurface.rasterDirect(_:_:_:_:_:_:)
 - Name: sk_surface_new_render_target
   SwiftReturnOwnership: retained
   Availability: nonswift
