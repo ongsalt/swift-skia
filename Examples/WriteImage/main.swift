@@ -11,7 +11,7 @@ let width: Int32 = 640
 let height: Int32 = 360
 
 var info = SKImageInfo(colorspace: nil, width: width, height: height, colorType: .rgba8888, alphaType: .premul)
-guard var surface = SKSurface.raster(&info, 0, nil) else {
+guard var surface = SKSurface.raster(info, 0, nil) else {
 	fatalError("could not create a raster surface")
 }
 
@@ -37,9 +37,9 @@ do {
 	let canvas = surface.canvas
 
 	// Background: diagonal gradient. SKColor is 0xAARRGGBB.
+	let colors: [SKColor] = [0xFF1E_3A8A, 0xFF9D_174D]
 	paint.shader = SKShader.linearGradient(
-		[SKPoint(x: 0, y: 0), SKPoint(x: Float(width), y: Float(height))],
-		[0xFF1E_3A8A, 0xFF9D_174D], nil, 2, .clamp, nil)
+		[SKPoint(x: 0, y: 0), SKPoint(x: Float(width), y: Float(height))], colors.span, nil, .clamp, nil)
 	canvas.drawPaint(paint)
 	paint.shader = nil
 

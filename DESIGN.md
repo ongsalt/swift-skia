@@ -159,7 +159,7 @@ Verified on Swift 6.4 in plain C mode (no C++ interop):
 
 | C pattern | Count | Without help, Swift sees | Fix (generated Swift) |
 |---|---|---|---|
-| Struct input passed by pointer (`const sk_rect_t*`) | 167 | `UnsafePointer<Rect>`; callers must write `var r = …; f(&r)` | Overload taking `Rect` by value |
+| Struct input passed by pointer (`const sk_rect_t*`) | 167 | `UnsafePointer<Rect>`; callers must write `var r = …; f(&r)` | **Generated overload** taking `SKRect` (required) or `SKRect?` (optional); the C function becomes `SwiftPrivate`. 82 public functions; the rest belong to the hand-written types |
 | Out-parameter (`void f(x, sk_matrix_t* out)`) | 56 | Caller passes `&out` | Return the value, or make it a property |
 | Pointer plus count | 51 | Pointer and `Int32` arguments | **apinotes:** `BoundsSafety` + `NoEscape` per buffer; with `SafeInteropWrappers`, Swift adds overloads taking `Span`/`MutableSpan` (`RawSpan` for `void*`, optional when nullable) with the count dropped |
 | `sk_string_t*` out | 15 | Raw string object | Return `String` |
@@ -247,9 +247,10 @@ Our layer translates the caller's `vkGetInstanceProcAddr` into SkiaSharp's `sk_g
 1. **Input:** `clang -Xclang -ast-dump=json -fsyntax-only` run over `CSkia.h` with the bundle's include path. We use the toolchain's clang, so there's no libclang dependency.
 2. **Classify types:** a type with `X_ref`/`X_unref` is ref-counted; a type with `X_new`/`X_delete` is owned. `sk_refcnt_t` and `sk_nvrefcnt_t` are base types.
 3. **Name things:** types and enum cases take SkiaSharp's names from its generated C# (`sk_colortype_t` → `SKColorType`, `RGBA_8888_SK_COLORTYPE` → `.rgba8888`), with an override table for the few it lacks. The first parameter becomes `self`. `sk_x_new_foo(...)` becomes the static factory `SKX.foo(_:...)`, and plain `sk_x_new(...)` becomes `init(_:...)`. `get_foo` becomes a property, settable when a matching `set_foo` exists, and `is_*`/`has_*` become `Bool` properties. No argument labels.
-4. **Overrides:** tables in `gen_apinotes.py`: `TYPE_NAMES`, `UNRETAINED`, `HAND_WRITTEN`, `SENDABLE`, and `COUNTED_BUFFERS` (function → buffer, count, nullable). `COUNTED_BUFFERS` is reviewed by hand rather than inferred: guessing from adjacent parameter names marks non-buffers like `cropRect` and misses pairs like gradient `colors`/`colorCount`, and a wrong `NoEscape` on a buffer Skia keeps would be a use-after-free. The generator fails if a listed parameter no longer exists, so a pin bump surfaces renames.
-5. **Output (v1):** `CSkia.apinotes` and `CSkia.h`: ref-counted classes, enums and option sets, renames, nullability, `SwiftPrivate` for wrapped functions, and bounds annotations for counted buffers.
-6. **Later:** `Sources/Skia/Generated/*.swift` with overloads for the struct-pointer, out-parameter, string and callback patterns in §3. The raw functions stay callable until then.
+4. **Struct overloads** (`gen_overloads.py`): for each public function with `const` struct pointers, a Swift overload in `Sources/Skia/Generated/StructOverloads.swift` taking them by value, as rust-skia does from the C++ signatures (`const SkRect&` required, `const SkMatrix*` optional). Nullability is read from SkiaSharp's C shims in mono/skia `src/c`, which call C++ exactly that way: a null check means optional; a dereference or a value helper (`AsMatrix`, `AsImageInfo`) means required. Pointers handed to C++ as-is are ambiguous: `STRUCT_POINTERS` decides them (reviewed against the C++ callee: `cropRect` and the codec options are optional, gradient `points` are arrays), and anything still unknown keeps its pointer type. Non-const struct pointers become `inout`. Overloads are only emitted when every parameter maps to a Swift type.
+5. **Overrides:** tables in `gen_apinotes.py`: `TYPE_NAMES`, `UNRETAINED`, `HAND_WRITTEN`, `SENDABLE`, and `COUNTED_BUFFERS` (function → buffer, count, nullable). `COUNTED_BUFFERS` is reviewed by hand rather than inferred: guessing from adjacent parameter names marks non-buffers like `cropRect` and misses pairs like gradient `colors`/`colorCount`, and a wrong `NoEscape` on a buffer Skia keeps would be a use-after-free. The generator fails if a listed parameter no longer exists, so a pin bump surfaces renames.
+6. **Output:** `CSkia.apinotes` and `CSkia.h` (ref-counted classes, enums and option sets, renames, nullability, `SwiftPrivate` for wrapped functions, bounds annotations for counted buffers) and `Sources/Skia/Generated/StructOverloads.swift`.
+7. **Next:** out-parameters as return values (`bool` + out struct → `T?`, as rust-skia's `local_clip_bounds() -> Option<Rect>`), then string and callback overloads. The raw functions stay callable until then.
 
 A CI check regenerates both files and fails if they differ from what's committed. When the mono/skia pin changes, the diff shows exactly what changed in the API.
 
@@ -259,7 +260,7 @@ A CI check regenerates both files and fails if they differ from what's committed
 Package.swift
 Sources/CSkia/         include/{module.modulemap, CSkia.h, CSkia.apinotes}, shim.c (empty)
 Sources/Skia/          re-export, Paint/Path/PathBuilder/Font/Canvas, Graphite/, Generated/
-native/                build.sh (per-target gn args + staging), merge_archives.py, bundle.py (info.json + zip), gen_apinotes.py, apinotes-overrides.yaml, smoke.c, skia.pin
+native/                build.sh (per-target gn args + staging), merge_archives.py, bundle.py (info.json + zip), gen_apinotes.py, gen_overloads.py, smoke.c, skia.pin, skiasharp.pin
 .github/workflows/     skia.yaml (build + bundle + index), skia-release.yaml (publish), ci.yml (build + test against released bundle)
 Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa software Vulkan)
 ```

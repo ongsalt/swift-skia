@@ -4,7 +4,7 @@ import Testing
 @Suite struct RasterTests {
 	func makeSurface(_ width: Int32, _ height: Int32) throws -> SKSurface {
 		var info = SKImageInfo(colorspace: nil, width: width, height: height, colorType: .rgba8888, alphaType: .premul)
-		return try #require(SKSurface.raster(&info, 0, nil))
+		return try #require(SKSurface.raster(info, 0, nil))
 	}
 
 	func pixels(_ surface: SKSurface, _ width: Int32, _ height: Int32) -> [UInt32] {
@@ -145,7 +145,7 @@ extension SKRect: @retroactive Equatable {
 @Suite struct EncodeTests {
 	func drawnSurface() throws -> SKSurface {
 		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
-		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		var surface = try #require(SKSurface.raster(info, 0, nil))
 		let paint = SKPaint()
 		paint.color = 0xFF00_80FF
 		surface.canvas.drawPaint(paint)
@@ -225,7 +225,7 @@ extension SKRect: @retroactive Equatable {
 
 	@Test func pixmapBytesStopAtLastPixel() throws {
 		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
-		var surface = try #require(SKSurface.raster(&info, 32, nil))  // padded rows
+		var surface = try #require(SKSurface.raster(info, 32, nil))  // padded rows
 		guard let pixmap = surface.peekPixels() else {
 			Issue.record("no pixels")
 			return
@@ -237,7 +237,7 @@ extension SKRect: @retroactive Equatable {
 
 	@Test func pixmapEraseReadAndSubset() throws {
 		var info = SKImageInfo(colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
-		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		var surface = try #require(SKSurface.raster(info, 0, nil))
 		guard let pixmap = surface.peekPixels() else {
 			Issue.record("no pixels")
 			return
@@ -264,7 +264,7 @@ extension SKRect: @retroactive Equatable {
 
 	@Test func rasterCopyFromPixmap() throws {
 		var info = SKImageInfo(colorspace: nil, width: 3, height: 2, colorType: .rgba8888, alphaType: .premul)
-		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		var surface = try #require(SKSurface.raster(info, 0, nil))
 		surface.canvas.clear(0xFF12_3456)
 		guard let pixmap = surface.peekPixels() else {
 			Issue.record("no pixels")
@@ -290,7 +290,7 @@ extension SKRect: @retroactive Equatable {
 @Suite struct SpanOverloadTests {
 	func pixel(_ shader: SKShader?, _ x: Int32) throws -> SKColor {
 		var info = SKImageInfo(colorspace: nil, width: 100, height: 1, colorType: .rgba8888, alphaType: .premul)
-		var surface = try #require(SKSurface.raster(&info, 0, nil))
+		var surface = try #require(SKSurface.raster(info, 0, nil))
 		let paint = SKPaint()
 		paint.shader = shader
 		surface.canvas.drawPaint(paint)
@@ -330,5 +330,40 @@ extension SKRect: @retroactive Equatable {
 		let copy = SKData.withCopy(bytes.span.bytes)
 		let data = try #require(copy)
 		#expect(data.size == 3)
+	}
+}
+
+@Suite struct StructOverloadTests {
+	let info = SKImageInfo(colorspace: nil, width: 8, height: 8, colorType: .rgba8888, alphaType: .premul)
+
+	@Test func surfaceFromValueInfo() throws {
+		let surface = try #require(SKSurface.raster(info, 0, nil))
+		let image = try #require(surface.newImageSnapshot())
+		#expect(image.width == 8)
+	}
+
+	@Test func imageFilterWithOptionalCropRect() throws {
+		let uncropped = SKImageFilter.blur(2, 2, .decal, nil, nil)
+		let cropped = SKImageFilter.offset(1, 1, uncropped, SKRect(left: 0, top: 0, right: 4, bottom: 4))
+		#expect(uncropped != nil)
+		#expect(cropped != nil)
+	}
+
+	@Test func shaderWithOptionalMatrix() throws {
+		var surface = try #require(SKSurface.raster(info, 0, nil))
+		surface.canvas.clear(0xFF00_FF00)
+		let image = try #require(surface.newImageSnapshot())
+		let sampling = SKSamplingOptions()
+		let identity = SKMatrix(scaleX: 1, skewX: 0, transX: 0, skewY: 0, scaleY: 1, transY: 0, persp0: 0, persp1: 0, persp2: 1)
+		#expect(image.makeShader(.repeat, .repeat, sampling, nil) != nil)
+		#expect(image.makeShader(.repeat, .repeat, sampling, identity) != nil)
+
+		var target = try #require(SKSurface.raster(info, 0, nil))
+		let paint = SKPaint()
+		paint.shader = image.makeShader(.repeat, .repeat, sampling, identity)
+		target.canvas.drawPaint(paint)
+		guard let pixmap = target.peekPixels() else { return }
+		let color = pixmap.pixelColor(3, 3)
+		#expect(color == 0xFF00_FF00)
 	}
 }

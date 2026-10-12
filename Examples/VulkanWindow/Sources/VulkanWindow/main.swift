@@ -47,9 +47,9 @@ func colorType(_ format: Int32) -> SKColorType {
 @MainActor
 func draw(_ canvas: borrowing SKCanvas, _ width: Float, _ height: Float, _ time: Float, _ fps: Float) {
 	paint.color = 0xFF00_0000  // the shader takes the paint's alpha
+	let colors: [SKColor] = [0xFF0F_172A, 0xFF31_2E81]
 	paint.shader = SKShader.linearGradient(
-		[SKPoint(x: 0, y: 0), SKPoint(x: width, y: height)],
-		[0xFF0F_172A, 0xFF31_2E81], nil, 2, .clamp, nil)
+		[SKPoint(x: 0, y: 0), SKPoint(x: width, y: height)], colors.span, nil, .clamp, nil)
 	canvas.drawPaint(paint)
 	paint.shader = nil
 
@@ -69,7 +69,7 @@ func draw(_ canvas: borrowing SKCanvas, _ width: Float, _ height: Float, _ time:
 
 func writePNG(_ pixels: [UInt8], _ rowBytes: Int, _ info: SKImageInfo, _ path: String) {
 	var info = info
-	guard let png = SKImage.rasterCopy(&info, pixels, rowBytes)?.encode(.png),
+	guard let png = SKImage.rasterCopy(info, pixels, rowBytes)?.encode(.png),
 		let file = fopen(path, "wb")
 	else { return }
 	png.span.withUnsafeBufferPointer { _ = fwrite($0.baseAddress, 1, $0.count, file) }

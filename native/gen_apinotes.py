@@ -2,7 +2,7 @@
 """Generates Sources/CSkia/include/{CSkia.h, CSkia.apinotes} from SkiaSharp's C API.
 
 Inputs (fetched once into .build/gen_apinotes/, or passed explicitly):
-  - mono/skia include/c at native/skia.pin                       (the C API)
+  - mono/skia include/c and src/c at native/skia.pin             (the C API and its shims)
   - mono/SkiaSharp binding/SkiaSharp/Generated at native/skiasharp.pin
     (C# names for every C struct/enum/enumerator, e.g. sk_colortype_t -> SKColorType)
 
@@ -13,6 +13,9 @@ What the apinotes do:
   - structs -> SkiaSharp's names (SKRect, SKImageInfo, ...)
   - functions touching hand-written types (paint, path, font, canvas) -> SwiftPrivate (__sk_*)
   - Ganesh (gr_*) and ref/unref -> unavailable in Swift
+  - counted buffers -> Span overloads (COUNTED_BUFFERS)
+  - structs passed by pointer -> Swift overloads taking them by value, written to
+    Sources/Skia/Generated/StructOverloads.swift (see gen_overloads.py)
 Everything else stays as the raw C API.
 
 usage: native/gen_apinotes.py [--headers DIR] [--skiasharp DIR]
@@ -26,9 +29,12 @@ import subprocess
 import sys
 import tempfile
 
+import gen_overloads
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".build" / "gen_apinotes"
 OUT = ROOT / "Sources" / "CSkia" / "include"
+SWIFT_OUT = ROOT / "Sources" / "Skia" / "Generated"
 
 # --- configuration ------------------------------------------------------------
 
@@ -79,7 +85,8 @@ UNRETAINED = {"sk_get_surface"}
 # They get BoundsSafety + NoEscape notes, so Swift adds overloads taking Span / MutableSpan
 # (RawSpan for void*) with the count dropped. Reviewed by hand: every buffer here is only
 # read or written during the call, never kept. Not here on purpose: buffers Skia keeps
-# (sk_data_new_with_proc, sk_memorystream_*), strings (better as String overloads), and
+# (sk_data_new_with_proc, sk_memorystream_*, sk_colorspace_icc_profile_parse),
+# strings (better as String overloads), and
 # textblob builder runs (Skia hands those buffers out).
 _GRADIENT = [("colors", "colorCount", False), ("colorPos", "colorCount", True)]
 COUNTED_BUFFERS = {
@@ -88,7 +95,6 @@ COUNTED_BUFFERS = {
     "sk_canvas_draw_simple_text": [("text", "byte_length", False)],
     "sk_color_premultiply_array": [("colors", "size", False), ("pmcolors", "size", False)],
     "sk_color_unpremultiply_array": [("pmcolors", "size", False), ("colors", "size", False)],
-    "sk_colorspace_icc_profile_parse": [("buffer", "length", False)],
     "sk_data_new_with_copy": [("src", "length", True)],
     "sk_font_break_text": [("text", "byteLength", False)],
     "sk_font_get_paths": [("glyphs", "count", False)],
@@ -195,6 +201,8 @@ def parse_c_api(headers: pathlib.Path, header_names: list[str]):
             tag_name = qual[len("struct "):]
             complete = (tag and tag["id"] in complete_records) or tag_name in complete_named
             typedefs[name] = "struct" if complete else "opaque"
+        elif "(*)" in qual:
+            typedefs[name] = "fnptr"
         else:
             typedefs[name] = "other"
 
@@ -263,7 +271,7 @@ def mechanical_type_name(c_name: str) -> str:
 # --- generation -----------------------------------------------------------------
 
 
-def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
+def generate(headers: pathlib.Path, generated_cs: pathlib.Path, shims: pathlib.Path) -> None:
     header_names = sorted(p.name for p in (headers / "include" / "c").glob("*.h") if p.name not in EXCLUDED_HEADERS)
     typedefs, functions = parse_c_api(headers, header_names)
     cs_types, cs_members = parse_skiasharp(generated_cs)
@@ -321,13 +329,19 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
 
     for c_name, member in sorted(cs_members.items()):
         swift = lower_first(member)
-        if swift not in SWIFT_KEYWORDS:
+        # Keywords are fine as case names (`.repeat`); these few aren't.
+        if swift not in ("init", "self", "Self", "Type"):
             enumerators.append({"Name": c_name, "SwiftName": swift})
 
     # Functions.
     receivers = sorted(class_names, key=lambda t: -len(t))  # longest prefix wins
     gr = re.compile(r"\bgr_\w+_t\b")
     getters = getter_types(functions, receivers, typedefs)
+    swift_types = {n["Name"]: n["SwiftName"] for n in typedef_notes}
+    sources = "".join(p.read_text() for p in sorted(shims.glob("*.cpp")))
+    planner = gen_overloads.Planner(typedefs, swift_types, class_names, COUNTED_BUFFERS,
+                                    gen_overloads.shim_definitions(sources))
+    overloads = []
     fn_notes, method_names = [], set()
     for t, shim in sorted(ref_shims.items()):
         if t in class_names:
@@ -347,8 +361,15 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
             note["SwiftPrivate"] = "true"
         else:
             swift = swift_name(name, fn, receivers, class_names, typedefs, getters)
-            if swift and swift not in method_names:
+            if swift in method_names:
+                swift = None
+            code = planner.plan(name, fn, swift)
+            if swift:
                 method_names.add(swift)
+            if code:
+                overloads.append(code)
+                note["SwiftPrivate"] = "true"
+            elif swift:
                 note["SwiftName"] = swift
 
         if name in COUNTED_BUFFERS and "Availability" not in note:
@@ -358,12 +379,16 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path) -> None:
             fn_notes.append(note)
 
     write_header(header_names, {t: s for t, s in ref_shims.items() if t in class_names})
+    SWIFT_OUT.mkdir(parents=True, exist_ok=True)
+    (SWIFT_OUT / "StructOverloads.swift").write_text(
+        "// Generated by native/gen_apinotes.py (gen_overloads.py). Do not edit.\n\n"
+        + gen_overloads.SUPPORT + "\n" + "\n".join(overloads))
     write_apinotes(tags, typedef_notes, fn_notes, enumerators)
     print(f"{len(class_names)} classes, {sum(1 for t in tags if 'EnumExtensibility' in t)} enums, "
           f"{len(typedef_notes) - sum(1 for t in tags if 'EnumExtensibility' in t)} structs, "
           f"{sum('SwiftName' in n for n in fn_notes)} renamed functions, "
           f"{sum('SwiftPrivate' in n for n in fn_notes)} private, "
-          f"{sum('Availability' in n for n in fn_notes)} hidden")
+          f"{sum('Availability' in n for n in fn_notes)} hidden, {len(overloads)} by-value struct overloads")
 
 
 def receiver_of(name: str, receivers: list[str], typedefs: dict) -> str | None:
@@ -404,7 +429,8 @@ def swift_name(name: str, fn: dict, receivers: list[str], class_names: dict[str,
     unlabeled = "_:" * len(rest)
 
     def ok(base: str) -> bool:
-        return bool(base) and base not in SWIFT_KEYWORDS and base[0].isalpha()
+        # Keywords work as member names (`.default`); these few don't.
+        return bool(base) and base not in ("init", "self", "Self", "Type") and base[0].isalpha()
 
     if is_method:
         prop = camel(suffix[4:])
@@ -492,12 +518,13 @@ def main() -> None:
     ap.add_argument("--skiasharp", type=pathlib.Path, help="SkiaSharp binding/SkiaSharp/Generated (default: fetch at native/skiasharp.pin)")
     args = ap.parse_args()
 
-    headers = args.headers or sparse_checkout(
-        "https://github.com/mono/skia", pin("skia.pin"), ["/include/c/"], CACHE / "skia")
+    skia = sparse_checkout(
+        "https://github.com/mono/skia", pin("skia.pin"), ["/include/c/", "/src/c/"], CACHE / "skia-src")
+    headers = args.headers or skia
     generated = args.skiasharp or sparse_checkout(
         "https://github.com/mono/SkiaSharp", pin("skiasharp.pin"),
         ["/binding/SkiaSharp/Generated/"], CACHE / "skiasharp") / "binding" / "SkiaSharp" / "Generated"
-    generate(headers.resolve(), generated.resolve())
+    generate(headers.resolve(), generated.resolve(), (skia / "src" / "c").resolve())
 
 
 if __name__ == "__main__":
