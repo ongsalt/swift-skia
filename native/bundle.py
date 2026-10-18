@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Packages build.sh output as SwiftPM (SE-0482) static-library artifact bundles.
+"""Packages build.py output as SwiftPM (SE-0482) static-library artifact bundles.
 
 One bundle per target; an .artifactbundleindex points SwiftPM at the right one
 by triple.

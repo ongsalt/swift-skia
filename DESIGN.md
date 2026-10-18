@@ -49,7 +49,7 @@ Guiding rule: **do as little of our own work as possible.** We reuse SkiaSharp's
 
 **Source.** [mono/skia](https://github.com/mono/skia), branch `skiasharp`, pinned to a commit. As of 2026-10-05 it tracks upstream `chrome/m156`. The fork compiles SkiaSharp's C API (`src/c/*.cpp`) into Skia's `:core` target, and the fork's own `SkiaSharp` GN target with `is_static_skiasharp=true` produces one complete static `libSkiaSharp.a` (Skia, its bundled third-party code, pathops, the C API). That is the configuration SkiaSharp ships for its static platforms. Our side needs no shim and no C++. The fork's DEPS is already trimmed (no Dawn, ANGLE or V8), so a plain `git-sync-deps` stays small.
 
-**GN args** (the full list is in `native/build.sh`). These are SkiaSharp's own Linux "no dependencies" args, built as a static library:
+**GN args** (the full list is in `native/build.py`). These are SkiaSharp's own Linux "no dependencies" args, built as a static library:
 
 ```
 target_os="linux" target_cpu="x64"
@@ -111,9 +111,9 @@ skia-linux-x86_64.artifactbundle/
 ```
 
 - **Workflows:**
-  - `.github/workflows/skia.yaml` is reusable, and also runs on changes to `native/`. Each matrix job (`platform`, `container`, `target`, `arch`) runs `native/build.sh <target> <arch>`, smoke-tests the result, and bundles its own zip with `native/bundle.py bundle`. An `index` job then writes `skia.artifactbundleindex` from each job's `*.entry.json`.
+  - `.github/workflows/skia.yaml` is reusable, and also runs on changes to `native/`. Each matrix job (`platform`, `container`, `target`, `arch`) runs `native/build.py <target> <arch>`, smoke-tests the result, and bundles its own zip with `native/bundle.py bundle`. An `index` job then writes `skia.artifactbundleindex` from each job's `*.entry.json`.
   - `skia-release.yaml` (manual) calls it and publishes everything as release `skia-<sha12>`.
-  - Adding a platform means one matrix entry plus one `case` in `build.sh`.
+  - Adding a platform means one matrix entry plus an entry in `build.py` (`TRIPLES`, and `target_config` for a new OS).
 - The package points at the index URL; its checksum is the index file's sha256.
 - `SWIFT_SKIA_LOCAL_BUNDLE=/path/to/skia-<target>.artifactbundle` overrides the URL for testing a CI build artifact locally.
 - Verified locally, using `bundle.py` output with the real SkiaSharp headers and a stand-in `.a`: SwiftPM picks up the bundle, Swift imports all the core and Graphite/Vulkan C headers in plain C mode with no warnings, and the linker searches the bundled library.
@@ -260,7 +260,7 @@ A CI check regenerates both files and fails if they differ from what's committed
 Package.swift
 Sources/CSkia/         include/{module.modulemap, CSkia.h, CSkia.apinotes}, shim.c (empty)
 Sources/Skia/          re-export, Paint/Path/PathBuilder/Font/Canvas, Graphite/, Generated/
-native/                build.sh (per-target gn args + staging), merge_archives.py, bundle.py (info.json + zip), gen_apinotes.py, gen_overloads.py, smoke.c, skia.pin, skiasharp.pin
+native/                build.py (per-target gn args + staging), merge_archives.py, bundle.py (info.json + zip), gen_apinotes.py, gen_overloads.py, smoke.c, skia.pin, skiasharp.pin
 .github/workflows/     skia.yaml (build + bundle + index), skia-release.yaml (publish), ci.yml (build + test against released bundle)
 Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa software Vulkan)
 ```

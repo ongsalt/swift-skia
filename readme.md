@@ -12,5 +12,5 @@ The default native build system can't index modules that depend on static-librar
 # Acknowledgement
 - `SkiaSharp` for c binding and skia build
 - `skia-safe` for ownership model
-- `dawn` for packaging
+- adobe `swan` for packaging
 - `SkiaKit`

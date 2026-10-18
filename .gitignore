@@ -6,7 +6,7 @@ Package.resolved
 xcuserdata/
 DerivedData/
 
-# Native build (native/build.sh, native/bundle.py)
+# Native build (native/build.py, native/bundle.py)
 skia-src/
 out/
 dist/

@@ -35,6 +35,10 @@ jobs:
           #   container: swift:6.4-jammy
           #   target: linux
           #   arch: arm64
+          - platform: windows-2025
+            container: ""
+            target: windows
+            arch: x86_64
 
     runs-on: ${{ matrix.platform }}
     container: ${{ matrix.container }}
@@ -51,6 +55,23 @@ jobs:
           apt-get install -y --no-install-recommends git python3 ninja-build curl ca-certificates libstdc++-12-dev
           git config --global --add safe.directory '*'
 
+      - name: Set up Python on Windows
+        if: runner.os == 'Windows'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # The image ships Visual Studio (MSVC + Windows SDK, found by GN) and LLVM.
+      - name: Install prerequisites on Windows
+        if: runner.os == 'Windows'
+        run: |
+          # GN runs its scripts with "python3", which setup-python doesn't provide on Windows.
+          py=$(dirname "$(command -v python)")
+          [ -e "$py/python3.exe" ] || cp "$py/python.exe" "$py/python3.exe"
+          python -m pip install ninja
+          echo "C:/Program Files/LLVM/bin" >> "$GITHUB_PATH"
+          git config --global core.longpaths true
+
       - name: Version
         id: version
         run: |
@@ -64,7 +85,7 @@ jobs:
           key: skia-src-${{ runner.os }}-${{ hashFiles('native/skia.pin') }}
 
       - name: Build Skia for ${{ matrix.target }} (${{ matrix.arch }})
-        run: native/build.sh ${{ matrix.target }} ${{ matrix.arch }}
+        run: python3 native/build.py ${{ matrix.target }} ${{ matrix.arch }}
 
       - name: Smoke test (raster draw + PNG encode, Graphite symbols linked)
         if: matrix.target == 'linux'
@@ -82,6 +103,35 @@ jobs:
               -Wl,--whole-archive builds/${{ matrix.target }}-${{ matrix.arch }}/libSkiaSharp.a -Wl,--no-whole-archive \
               -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined > link.log 2>&1; then
             grep -o "undefined reference to .*" link.log | sort -u | head -100 || cat link.log
+            exit 1
+          fi
+
+      # System libraries Skia's GN targets list for Windows; users link the same
+      # ones (Package.swift). The CRT and C++ runtime come from /MD's defaultlibs.
+      # MSYS_NO_PATHCONV keeps Git Bash from rewriting /flags as paths.
+      # -fuse-ld=lld: Git Bash's coreutils link.exe can shadow MSVC's.
+      - name: Smoke test on Windows (raster draw + PNG encode, Graphite symbols linked)
+        if: matrix.target == 'windows'
+        env:
+          MSYS_NO_PATHCONV: "1"
+        run: |
+          stage=builds/${{ matrix.target }}-${{ matrix.arch }}
+          clang-cl /nologo /O1 /MD native/smoke.c /I "$stage" /Fe:smoke.exe -fuse-ld=lld \
+            /link "$stage/SkiaSharp.lib" ole32.lib oleaut32.lib user32.lib usp10.lib fontsub.lib gdi32.lib
+          ./smoke.exe "$stage/smoke.png"
+          test -s "$stage/smoke.png"
+
+      - name: Check every object in the library links on Windows
+        if: matrix.target == 'windows'
+        env:
+          MSYS_NO_PATHCONV: "1"
+        run: |
+          stage=builds/${{ matrix.target }}-${{ matrix.arch }}
+          echo 'int skia_link_check;' > whole.c
+          if ! clang-cl /nologo /LD /MD whole.c /Fe:whole.dll -fuse-ld=lld \
+              /link /NOENTRY "/WHOLEARCHIVE:$stage/SkiaSharp.lib" \
+              ole32.lib oleaut32.lib user32.lib usp10.lib fontsub.lib gdi32.lib > link.log 2>&1; then
+            grep -o "undefined symbol: .*" link.log | sort -u | head -100 || cat link.log
             exit 1
           fi
 

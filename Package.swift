@@ -38,6 +38,13 @@ let package = Package(
 				.linkedLibrary("m", .when(platforms: [.linux])),
 				.linkedLibrary("dl", .when(platforms: [.linux])),
 				.linkedLibrary("pthread", .when(platforms: [.linux])),
+				// Skia's GN targets list these for Windows (native/build.py).
+				.linkedLibrary("Ole32", .when(platforms: [.windows])),
+				.linkedLibrary("OleAut32", .when(platforms: [.windows])),
+				.linkedLibrary("User32", .when(platforms: [.windows])),
+				.linkedLibrary("Usp10", .when(platforms: [.windows])),
+				.linkedLibrary("FontSub", .when(platforms: [.windows])),
+				.linkedLibrary("Gdi32", .when(platforms: [.windows])),
 			]
 		),
 		.target(
@@ -59,7 +66,10 @@ let package = Package(
 		.target(
 			name: "CVulkanTestSupport",
 			path: "Tests/CVulkanTestSupport",
-			linkerSettings: [.linkedLibrary("vulkan")]
+			linkerSettings: [
+				.linkedLibrary("vulkan", .when(platforms: [.linux])),
+				.linkedLibrary("vulkan-1", .when(platforms: [.windows])),
+			]
 		),
 		.testTarget(
 			name: "SkiaTests",
