@@ -129,7 +129,7 @@ jobs:
           stage=builds/${{ matrix.target }}-${{ matrix.arch }}
           echo 'int skia_link_check;' > whole.c
           if ! clang-cl /nologo /LD /MD whole.c /Fe:whole.dll -fuse-ld=lld \
-              /link /NOENTRY "/WHOLEARCHIVE:$stage/SkiaSharp.lib" \
+              /link "/WHOLEARCHIVE:$stage/SkiaSharp.lib" \
               ole32.lib oleaut32.lib user32.lib usp10.lib fontsub.lib gdi32.lib > link.log 2>&1; then
             grep -o "undefined symbol: .*" link.log | sort -u | head -100 || cat link.log
             exit 1
