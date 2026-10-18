@@ -27,10 +27,10 @@ jobs:
         include:
           # container: Jammy sets the glibc/libstdc++ baseline users need.
           # Leave it empty for runners that build natively (macOS, Windows).
-          # - platform: ubuntu-24.04
-          #   container: swift:6.4-jammy
-          #   target: linux
-          #   arch: x86_64
+          - platform: ubuntu-24.04
+            container: swift:6.4-jammy
+            target: linux
+            arch: x86_64
           # - platform: ubuntu-24.04-arm
           #   container: swift:6.4-jammy
           #   target: linux
