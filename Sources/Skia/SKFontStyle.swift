@@ -1,7 +1,3 @@
-#if canImport(Glibc)
-import Glibc
-#endif
-
 /// Weight, width and slant of a typeface.
 public final class SKFontStyle {
 	public let handle: OpaquePointer
@@ -48,9 +44,14 @@ extension SKFontManager {
 	public func matchFamilyStyleCharacter(
 		_ family: String?, _ style: SKFontStyle, _ bcp47: [String], _ character: Unicode.Scalar
 	) -> SKTypeface? {
-		let tags = bcp47.map { strdup($0) }
-		defer { tags.forEach { free($0) } }
-		var pointers = tags.map { $0.map { UnsafePointer($0) } }
+		let tags = bcp47.map { tag in
+			let utf8 = tag.utf8CString
+			let buffer = UnsafeMutableBufferPointer<CChar>.allocate(capacity: utf8.count)
+			_ = buffer.initialize(from: utf8)
+			return buffer
+		}
+		defer { tags.forEach { $0.deallocate() } }
+		var pointers: [UnsafePointer<CChar>?] = tags.map { UnsafePointer($0.baseAddress) }
 		// "" rather than nil for "any family", as SkiaSharp does (https://bugs.chromium.org/p/skia/issues/detail?id=6196).
 		return __sk_fontmgr_match_family_style_character(
 			self, family ?? "", style.handle, &pointers, Int32(pointers.count), Int32(bitPattern: character.value))

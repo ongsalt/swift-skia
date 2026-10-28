@@ -6,6 +6,8 @@ import Skia
 
 #if canImport(Glibc)
 import Glibc
+#elseif canImport(ucrt)
+import ucrt
 #endif
 
 let arguments = CommandLine.arguments

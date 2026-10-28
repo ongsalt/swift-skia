@@ -4,6 +4,8 @@ import Skia
 
 #if canImport(Glibc)
 import Glibc
+#elseif canImport(ucrt)
+import ucrt
 #endif
 
 let path = CommandLine.arguments.dropFirst().first ?? "skia-example.png"
@@ -24,7 +26,7 @@ let (cx, cy, outer, inner): (Float, Float, Float, Float) = (500, 150, 90, 38)
 for k in 0..<10 {
 	let angle = Float(k) * .pi / 5 - .pi / 2
 	let r = k.isMultiple(of: 2) ? outer : inner
-	let (x, y) = (cx + r * cos(angle), cy + r * sin(angle))
+	let (x, y) = (cx + r * cosf(angle), cy + r * sinf(angle))
 	k == 0 ? builder.moveTo(x, y) : builder.lineTo(x, y)
 }
 builder.close()
