@@ -39,8 +39,8 @@ Guiding rule: **do as little of our own work as possible.** We reuse SkiaSharp's
 ```
  user code ──► Skia      Swift: re-exports CSkia + a small hand-written layer
                  │
-               CSkia     C module: modulemap, wrapper header, generated .apinotes
-                 │         (no C++ sources; only an empty .c file to satisfy SwiftPM)
+               CSkia     C module: modulemap, wrapper header, generated .apinotes, plus small C++
+                 │         shims (swsk_*.cpp) over Skia's C++ API where SkiaSharp's C API has gaps
                SkiaLib   binaryTarget: SE-0482 static-library artifactbundle
                            libSkiaSharp.a (mono/skia + SkiaSharp's C API) + include/c/*.h
 ```
@@ -88,9 +88,20 @@ skia-linux-x86_64.artifactbundle/
   info.json
   linux-x86_64/
     libSkiaSharp.a
-    headers/include/c/*.h          the headers include each other as "include/c/…",
-    headers/include/xamarin/*.h    so headers/ is the search path
-  skia_version.json                { "mono_skia_commit": "...", "version": "skia-<sha12>" }
+    headers/skia/include/c/*.h       the C API (what Swift imports)
+    headers/skia/include/core/… …    Skia's C++ API, for C++ shims
+    headers/skia/include/config/SkUserConfig.h   the library's public defines (from `gn desc`)
+  skia_version.json                { "mono_skia_commit": "...", "version": "skia-<sha12>", "defines": [...] }
+```
+
+`headerPaths` reach every dependent, so everything sits under `skia/`. Skia's headers include each
+other from the repository root (`"include/core/SkTypes.h"`); `native/stage_headers.py` rewrites
+those to file-relative includes, so dependents only ever see `skia/…`. Because every Skia header
+loads `SkUserConfig.h`, C++ compiled against the bundle (our shims, or a user's own glue) gets the
+same layouts as the prebuilt library with no compiler flags. CI checks this with
+`native/smoke_cpp.cpp`, built with no flags and linked against the library.
+
+```
 ```
 
 ```json
@@ -271,7 +282,7 @@ Tests/SkiaTests/       raster render tests; Graphite tests on lavapipe (Mesa sof
 2. **Done:** `Package.swift` with the binaryTarget pointing at the release's `.artifactbundleindex`; raster tests and the `WriteImage` example.
 3. The generator (`gen_apinotes.py`): apinotes and `CSkia.h`. Generated Swift overloads come after v1.
 4. **Done:** the hand-written layer: `SKPaint`, `SKPath`, `SKPathBuilder`, `SKFont` (`final class`es), and `SKCanvas` (`~Copyable` + `~Escapable`, from `surface.canvas`).
-5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Caller-owned `VkImage`s wrap through `SKGraphiteBackendTexture` and `SKSurface.wrapBackendTexture(_:_:_:_:_:)`; `Examples/VulkanWindow` (a separate package needing SDL3) draws into a swapchain this way. The C API can't pass Graphite a final image layout or semaphores, so the example submits synchronously and moves the image from `COLOR_ATTACHMENT_OPTIMAL` to `PRESENT_SRC_KHR` itself; the validation layers report no errors with that. That stays until SkiaSharp [#4729](https://github.com/mono/SkiaSharp/pull/4729) merges: it adds `sk_graphite_context_insert_recording_full` with a target texture state and wait/signal semaphores, and [#5329](https://github.com/mono/SkiaSharp/pull/5329) has the matching Vulkan present loop. Then the pin moves to the merged commit.
+5. **Done:** Graphite on Vulkan: `SKGraphiteContext.vulkan(_:_:)` on the caller's device, `SKGraphiteRecorder`/`SKGraphiteRecording` (`~Copyable`), `SKSurface.renderTarget(_:_:_:_:)`, and `readPixels` via async readback. Tested on a real GPU (RADV) and on llvmpipe; tests create the device through a test-only C target (`Tests/CVulkanTestSupport`). Caller-owned `VkImage`s wrap through `SKGraphiteBackendTexture` and `SKSurface.wrapBackendTexture(_:_:_:_:_:)`; `Examples/VulkanWindow` (a separate package needing SDL3) draws into a swapchain this way. Presenting uses `insertRecording(_:options:)` (`SKGraphiteInsertOptions`): SkiaSharp's C API has no way to pass `InsertRecordingInfo`'s target texture state, semaphores or finished callback, so `Sources/CSkia/swsk_graphite.cpp` calls Graphite's C++ API directly. The example waits on the acquire semaphore, has Graphite leave the image in `PRESENT_SRC_KHR` and signal a render-finished semaphore that present waits on, with two frames in flight and no CPU wait per frame; validation is clean, and dropping the target layout makes validation report the wrong present layout. SkiaSharp [#4729](https://github.com/mono/SkiaSharp/pull/4729) adds the same to its C API; once it merges, the shim can go.
 
 ## 8. Risks and open items
 

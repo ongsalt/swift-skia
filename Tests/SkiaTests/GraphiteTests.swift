@@ -101,4 +101,39 @@ import Testing
 		#expect(second == .success)
 		#expect(submitted)
 	}
+
+	@Test func insertOptionsFinishAndTransition() throws {
+		let device = try #require(Device(), "no Vulkan device with a graphics queue")
+		guard var context = SKGraphiteContext.vulkan(device.backend) else {
+			Issue.record("Skia rejected the Vulkan device \(device.name)")
+			return
+		}
+		guard var recorder = context.makeRecorder() else {
+			Issue.record("makeRecorder failed")
+			return
+		}
+		let info = SKImageInfo(
+			colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
+		var surface = try #require(SKSurface.renderTarget(&recorder, info))
+		surface.canvas.clear(0xFF00_FF00)
+		guard let recording = recorder.snap() else {
+			Issue.record("nothing recorded")
+			return
+		}
+		final class Result { var calls: [Bool] = [] }
+		let result = Result()
+		let status = context.insertRecording(
+			recording,
+			options: SKGraphiteInsertOptions(
+				targetSurface: surface,
+				targetVulkanImageLayout: (6 /* TRANSFER_SRC_OPTIMAL */, device.raw.queueFamily),
+				finished: { result.calls.append($0) }))
+		var sync = SKGraphiteSubmitInfo()
+		sync.fSync = true
+		let submitted = context.submit(sync)
+		context.checkAsyncWorkCompletion()
+		#expect(status == .success)
+		#expect(submitted)
+		#expect(result.calls == [true])
+	}
 }

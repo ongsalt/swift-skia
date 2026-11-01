@@ -4,12 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/c/sk_canvas.h"
-#include "include/c/sk_graphite_vulkan.h"
-#include "include/c/sk_paint.h"
-#include "include/c/sk_pixmap.h"
-#include "include/c/sk_stream.h"
-#include "include/c/sk_surface.h"
+#include "skia/include/c/sk_canvas.h"
+#include "skia/include/c/sk_graphite_vulkan.h"
+#include "skia/include/c/sk_paint.h"
+#include "skia/include/c/sk_pixmap.h"
+#include "skia/include/c/sk_stream.h"
+#include "skia/include/c/sk_surface.h"
 
 int main(int argc, char** argv) {
     const char* path = argc > 1 ? argv[1] : "smoke.png";

@@ -23,3 +23,4 @@ smoke
 ref/
 
 __pycache__
+/smoke_cpp

@@ -7,8 +7,6 @@
 #include <string.h>
 #include <vulkan/vulkan.h>
 
-#define MAX_IMAGES 8
-
 struct cw_window {
     SDL_Window* window;
     VkInstance instance;
@@ -20,8 +18,10 @@ struct cw_window {
     char deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
 
     VkSwapchainKHR swapchain;
-    VkImage images[MAX_IMAGES];
+    VkImage* images;
+    VkSemaphore* renderFinished;  // one per swapchain image: Graphite signals, present waits
     uint32_t imageCount;
+    VkSemaphore acquired[CW_FRAMES_IN_FLIGHT];  // one per frame slot: acquire signals, Graphite waits
     VkFormat format;
     VkImageUsageFlags usage;
     VkExtent2D extent;
@@ -30,10 +30,6 @@ struct cw_window {
     Uint64 lastRecreateNS;
     uint32_t recreateCount;
     Uint64 lastPresentNS;
-
-    VkCommandPool commandPool;
-    VkCommandBuffer commandBuffer;
-    VkFence fence;
 };
 
 static const uint32_t kApiVersion = VK_API_VERSION_1_1;
@@ -43,6 +39,24 @@ static const uint32_t kApiVersion = VK_API_VERSION_1_1;
 // available at once, so recreating every frame would also defeat FIFO pacing.
 static const Uint64 kRecreateIntervalNS = 50 * 1000000ull;
 
+static VkSemaphore create_semaphore(VkDevice device) {
+    VkSemaphoreCreateInfo info = {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    vkCreateSemaphore(device, &info, NULL, &semaphore);
+    return semaphore;
+}
+
+// Call with the device idle.
+static void destroy_image_resources(cw_window* w) {
+    for (uint32_t i = 0; i < w->imageCount; i++) vkDestroySemaphore(w->device, w->renderFinished[i], NULL);
+    free(w->renderFinished);
+    free(w->images);
+    w->renderFinished = NULL;
+    w->images = NULL;
+    w->imageCount = 0;
+}
+
+// Call with the device idle.
 static bool create_swapchain(cw_window* w) {
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(w->physicalDevice, w->surface, &caps);
@@ -52,12 +66,20 @@ static bool create_swapchain(cw_window* w) {
     VkSurfaceFormatKHR formats[64];
     if (formatCount > 64) formatCount = 64;
     vkGetPhysicalDeviceSurfaceFormatsKHR(w->physicalDevice, w->surface, &formatCount, formats);
-    VkSurfaceFormatKHR chosen = formats[0];
-    for (uint32_t i = 0; i < formatCount; i++) {
-        if (formats[i].format == VK_FORMAT_B8G8R8A8_UNORM || formats[i].format == VK_FORMAT_R8G8B8A8_UNORM) {
-            chosen = formats[i];
-            break;
+    // Formats with a matching Skia color type, in order of preference.
+    const VkFormat preferred[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB};
+    VkSurfaceFormatKHR chosen = {.format = VK_FORMAT_UNDEFINED};
+    for (size_t p = 0; p < sizeof preferred / sizeof *preferred && chosen.format == VK_FORMAT_UNDEFINED; p++) {
+        for (uint32_t i = 0; i < formatCount; i++) {
+            if (formats[i].format == preferred[p]) {
+                chosen = formats[i];
+                break;
+            }
         }
+    }
+    if (chosen.format == VK_FORMAT_UNDEFINED) {
+        fprintf(stderr, "the window offers no 8-bit RGBA/BGRA swapchain format\n");
+        return false;
     }
 
     VkExtent2D extent = caps.currentExtent;
@@ -71,7 +93,6 @@ static bool create_swapchain(cw_window* w) {
 
     uint32_t imageCount = caps.minImageCount + 1;
     if (caps.maxImageCount && imageCount > caps.maxImageCount) imageCount = caps.maxImageCount;
-    if (imageCount > MAX_IMAGES) imageCount = MAX_IMAGES;
 
     // What Graphite renders into a target with; input attachment enables its dst-read path.
     VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
@@ -98,8 +119,13 @@ static bool create_swapchain(cw_window* w) {
     if (vkCreateSwapchainKHR(w->device, &info, NULL, &w->swapchain) != VK_SUCCESS) return false;
     if (old) vkDestroySwapchainKHR(w->device, old, NULL);
 
-    w->imageCount = MAX_IMAGES;
+    // minImageCount is only a lower bound: ask for the real count.
+    destroy_image_resources(w);
+    vkGetSwapchainImagesKHR(w->device, w->swapchain, &w->imageCount, NULL);
+    w->images = calloc(w->imageCount, sizeof *w->images);
+    w->renderFinished = calloc(w->imageCount, sizeof *w->renderFinished);
     vkGetSwapchainImagesKHR(w->device, w->swapchain, &w->imageCount, w->images);
+    for (uint32_t i = 0; i < w->imageCount; i++) w->renderFinished[i] = create_semaphore(w->device);
     w->format = chosen.format;
     w->usage = usage;
     w->extent = extent;
@@ -197,21 +223,7 @@ cw_window* cw_create(const char* title, int width, int height) {
     }
     vkGetDeviceQueue(w->device, w->queueFamily, 0, &w->queue);
 
-    VkCommandPoolCreateInfo poolInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = w->queueFamily,
-    };
-    vkCreateCommandPool(w->device, &poolInfo, NULL, &w->commandPool);
-    VkCommandBufferAllocateInfo allocInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = w->commandPool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-    vkAllocateCommandBuffers(w->device, &allocInfo, &w->commandBuffer);
-    VkFenceCreateInfo fenceInfo = {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    vkCreateFence(w->device, &fenceInfo, NULL, &w->fence);
+    for (int i = 0; i < CW_FRAMES_IN_FLIGHT; i++) w->acquired[i] = create_semaphore(w->device);
 
     if (!create_swapchain(w)) w->needsRecreate = true;
     return w;
@@ -221,8 +233,8 @@ void cw_destroy(cw_window* w) {
     if (!w) return;
     if (w->device) {
         vkDeviceWaitIdle(w->device);
-        if (w->fence) vkDestroyFence(w->device, w->fence, NULL);
-        if (w->commandPool) vkDestroyCommandPool(w->device, w->commandPool, NULL);
+        destroy_image_resources(w);
+        for (int i = 0; i < CW_FRAMES_IN_FLIGHT; i++) vkDestroySemaphore(w->device, w->acquired[i], NULL);
         if (w->swapchain) vkDestroySwapchainKHR(w->device, w->swapchain, NULL);
         vkDestroyDevice(w->device, NULL);
     }
@@ -267,32 +279,34 @@ bool cw_poll(cw_window* w) {
     return true;
 }
 
-bool cw_acquire(cw_window* w, cw_frame* frame) {
-    const bool mustRecreate = w->outOfDate || !w->swapchain;
-    if (w->needsRecreate || mustRecreate) {
+static bool must_recreate(const cw_window* w) { return w->outOfDate || !w->swapchain; }
+
+bool cw_recreate_pending(const cw_window* w) {
+    return must_recreate(w) || (w->needsRecreate && SDL_GetTicksNS() - w->lastRecreateNS >= kRecreateIntervalNS);
+}
+
+bool cw_acquire(cw_window* w, uint32_t slot, cw_frame* frame) {
+    if (cw_recreate_pending(w)) {
         const Uint64 since = SDL_GetTicksNS() - w->lastRecreateNS;
-        if (since < kRecreateIntervalNS && mustRecreate) SDL_DelayNS(kRecreateIntervalNS - since);
-        if (since >= kRecreateIntervalNS || mustRecreate) {
-            vkDeviceWaitIdle(w->device);
-            const bool created = create_swapchain(w);
-            w->lastRecreateNS = SDL_GetTicksNS();
-            if (!created) {  // minimized: nothing to draw into
-                SDL_DelayNS(16 * 1000000ull);
-                return false;
-            }
-            w->outOfDate = false;
-            w->recreateCount++;
+        if (since < kRecreateIntervalNS) SDL_DelayNS(kRecreateIntervalNS - since);
+        vkDeviceWaitIdle(w->device);
+        const bool created = create_swapchain(w);
+        w->lastRecreateNS = SDL_GetTicksNS();
+        if (!created) {  // minimized: nothing to draw into
+            SDL_DelayNS(16 * 1000000ull);
+            return false;
         }
+        w->outOfDate = false;
+        w->recreateCount++;
     }
     uint32_t index;
-    VkResult result = vkAcquireNextImageKHR(w->device, w->swapchain, UINT64_MAX, VK_NULL_HANDLE, w->fence, &index);
+    VkSemaphore acquired = w->acquired[slot % CW_FRAMES_IN_FLIGHT];
+    VkResult result = vkAcquireNextImageKHR(w->device, w->swapchain, UINT64_MAX, acquired, VK_NULL_HANDLE, &index);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         w->outOfDate = true;
         return false;
     }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) return false;
-    vkWaitForFences(w->device, 1, &w->fence, VK_TRUE, UINT64_MAX);
-    vkResetFences(w->device, 1, &w->fence);
     if (result == VK_SUBOPTIMAL_KHR) w->needsRecreate = true;
 
     *frame = (cw_frame){
@@ -302,42 +316,18 @@ bool cw_acquire(cw_window* w, cw_frame* frame) {
         .height = (int32_t)w->extent.height,
         .format = w->format,
         .usage = w->usage,
+        .acquiredSemaphore = (uint64_t)(uintptr_t)acquired,
+        .renderFinishedSemaphore = (uint64_t)(uintptr_t)w->renderFinished[index],
     };
     return true;
 }
 
 bool cw_present(cw_window* w, const cw_frame* frame) {
-    VkCommandBufferBeginInfo begin = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-    vkBeginCommandBuffer(w->commandBuffer, &begin);
-    VkImageMemoryBarrier barrier = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dstAccessMask = 0,
-        .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = (VkImage)frame->image,
-        .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
-    };
-    vkCmdPipelineBarrier(w->commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
-    vkEndCommandBuffer(w->commandBuffer);
-
-    VkSubmitInfo submit = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &w->commandBuffer,
-    };
-    vkQueueSubmit(w->queue, 1, &submit, w->fence);
-    vkWaitForFences(w->device, 1, &w->fence, VK_TRUE, UINT64_MAX);
-    vkResetFences(w->device, 1, &w->fence);
-
+    VkSemaphore renderFinished = (VkSemaphore)(uintptr_t)frame->renderFinishedSemaphore;
     VkPresentInfoKHR present = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &renderFinished,
         .swapchainCount = 1,
         .pSwapchains = &w->swapchain,
         .pImageIndices = &frame->index,

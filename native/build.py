@@ -7,7 +7,7 @@ env:
   SKIA_SRC   checkout directory         (default: ./skia-src)
   BUILDS     staging root               (default: ./builds)
   CLANG_WIN  LLVM install, Windows only (default: C:/Program Files/LLVM)
-output: $BUILDS/<target>-<arch>/{libSkiaSharp.a or SkiaSharp.lib, include/, manifest.json}
+output: $BUILDS/<target>-<arch>/{libSkiaSharp.a or SkiaSharp.lib, headers/skia/, manifest.json}
 
 Needs git, ninja and clang on PATH. On Windows also Visual Studio (C++ tools +
 Windows SDK), which GN finds itself, and a `python3` on PATH for GN's scripts.
@@ -20,6 +20,7 @@ import subprocess
 import sys
 
 import merge_archives
+import stage_headers
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -123,6 +124,38 @@ def checkout(src: pathlib.Path, pin: str) -> None:
     run(sys.executable, "bin/fetch-gn", cwd=src)
 
 
+# Two empty targets for `gn desc`: one depending on SkiaSharp, one on nothing. The defines only
+# the first has are exactly what code compiled against SkiaSharp's headers must use.
+PROBE_MARKER = "# swift-skia: define probes"
+PROBES = f"""
+{PROBE_MARKER} (added by native/build.py)
+source_set("swift_skia_consumer") {{
+  deps = [ ":SkiaSharp" ]
+}}
+source_set("swift_skia_baseline") {{
+}}
+"""
+
+
+def add_probes(src: pathlib.Path) -> None:
+    build_gn = src / "BUILD.gn"
+    text = build_gn.read_text()
+    if PROBE_MARKER not in text:
+        build_gn.write_text(text + PROBES)
+
+
+def public_defines(gn: pathlib.Path, src: pathlib.Path, out: pathlib.Path) -> list[str]:
+    def defines(label: str) -> list[str]:
+        result = subprocess.run([str(gn), "desc", out.as_posix(), label, "defines"],
+                                cwd=src, check=True, capture_output=True, text=True)
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    baseline = defines("//:swift_skia_baseline")
+    public = [d for d in defines("//:swift_skia_consumer") if d not in baseline]
+    # The library is always built with is_debug=false. SkTypes.h would otherwise derive
+    # SK_RELEASE/SK_DEBUG from NDEBUG, which consumers' debug builds don't define.
+    return ["SK_RELEASE"] + public
+
+
 def main() -> None:
     if len(sys.argv) != 3:
         sys.exit("usage: build.py <target> <arch>")
@@ -137,6 +170,7 @@ def main() -> None:
     lib, obj, target_args = target_config(target)
 
     checkout(src, pin)
+    add_probes(src)
 
     # --- configure ------------------------------------------------------------
     args = target_args + [f'target_cpu="{CPUS[arch]}"'] + COMMON_ARGS
@@ -167,14 +201,10 @@ def main() -> None:
         f"SkiaSharp.SkiaKeeper.{obj}",
     })
 
-    # The headers include each other as "include/c/...", so stage include/ itself.
-    keep = ("sk_", "gr_", "skottie_", "sksg_", "skresources_")
-    for d in ("c", "xamarin"):
-        for h in (src / "include" / d).rglob("*.h"):
-            if h.name.startswith(keep):
-                dest = stage / "include" / h.relative_to(src / "include")
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(h, dest)
+    # Public headers (the C API and the C++ API) under a skia/ namespace, with SkUserConfig.h
+    # carrying the defines the library was built with.
+    defines = public_defines(gn, src, out)
+    stage_headers.stage(src, stage / "headers", defines)
 
     manifest = {
         "name": name,
@@ -182,6 +212,7 @@ def main() -> None:
         "library": lib,
         "supportedTriples": [TRIPLES[name]],
         "skiaCommit": pin,
+        "defines": defines,
     }
     (stage / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"{stage / lib}: {(stage / lib).stat().st_size >> 20} MiB")

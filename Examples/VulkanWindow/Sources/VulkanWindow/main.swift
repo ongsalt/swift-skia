@@ -38,12 +38,30 @@ let smallFont = SKFont(SKTypeface.default(.bold), 18)
 let paint = SKPaint()
 paint.isAntialias = true
 
-/// VkFormat → Skia color type for the formats the swapchain picks.
+/// VkFormat → Skia color type, for the formats window.c picks from.
 func colorType(_ format: Int32) -> SKColorType {
 	switch format {
-	case 37, 43: .rgba8888  // VK_FORMAT_R8G8B8A8_UNORM / _SRGB
-	default: .bgra8888      // VK_FORMAT_B8G8R8A8_UNORM / _SRGB
+	case 44: .bgra8888   // VK_FORMAT_B8G8R8A8_UNORM
+	case 37: .rgba8888   // VK_FORMAT_R8G8B8A8_UNORM
+	case 43: .srgba8888  // VK_FORMAT_R8G8B8A8_SRGB
+	default: fatalError("unexpected swapchain format \(format)")
 	}
+}
+
+let presentSrcLayout: Int32 = 1_000_001_002  // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+
+/// A frame the CPU recorded and the GPU may still be working on.
+final class FrameSlot {
+	var inFlight = false
+}
+let slots = (0..<Int(CW_FRAMES_IN_FLIGHT)).map { _ in FrameSlot() }
+
+/// Waits until the GPU has finished every inserted recording.
+func finishGPUWork() {
+	var sync = SKGraphiteSubmitInfo()
+	sync.fSync = true
+	context.submit(sync)
+	context.checkAsyncWorkCompletion()
 }
 
 @MainActor
@@ -90,7 +108,13 @@ func seconds(_ duration: Duration) -> Float {
 }
 
 while cw_poll(window) {
-	guard cw_acquire(window, &frame) else { continue }
+	let slot = slots[frameCount % slots.count]
+	while slot.inFlight {  // its acquire semaphore is reused below
+		context.checkAsyncWorkCompletion()
+		if slot.inFlight { usleep(200) }
+	}
+	if cw_recreate_pending(window) { finishGPUWork() }  // the swapchain images are about to go away
+	guard cw_acquire(window, UInt32(frameCount % slots.count), &frame) else { continue }
 
 	let textureInfo = SKGraphiteVkTextureInfo(
 		fSampleCount: 1, fMipmapped: false, fFlags: 0, fFormat: frame.format,
@@ -107,26 +131,38 @@ while cw_poll(window) {
 	lastTick = now
 	draw(surface.canvas, Float(frame.width), Float(frame.height), seconds(now - start), fps)
 
-	guard let recording = recorder.snap() else { continue }
-	context.insertRecording(recording)
-	var sync = SKGraphiteSubmitInfo()
-	sync.fSync = true
-	context.submit(sync)
+	// draw() always records something, so a nil snap means Graphite failed.
+	guard let recording = recorder.snap() else { fatalError("Graphite recorded nothing") }
+	slot.inFlight = true
+	let status = context.insertRecording(
+		recording,
+		options: SKGraphiteInsertOptions(
+			targetSurface: surface,
+			targetVulkanImageLayout: (presentSrcLayout, device.queueFamily),
+			waitSemaphores: [frame.acquiredSemaphore],
+			signalSemaphores: [frame.renderFinishedSemaphore],
+			finished: { success in
+				if !success { print("frame \(frameCount): GPU work failed") }
+				slot.inFlight = false
+			}))
+	guard status == .success else { fatalError("insertRecording failed: \(status)") }
+	context.submit()
 
 	if frameCount == 0 { print("swapchain: VkFormat \(frame.format)") }
 	if resizeTest { cw_set_size(window, 640 + Int32(frameCount * 37 % 400), 400 + Int32(frameCount * 23 % 200)) }
 	frameCount += 1
-	if let maxFrames, frameCount >= maxFrames {
-		if let screenshotPath {
-			let info = SKImageInfo(colorspace: nil, width: frame.width, height: frame.height, colorType: .rgba8888, alphaType: .premul)
-			if let (pixels, rowBytes) = context.readPixels(surface, info) {
-				writePNG(pixels, rowBytes, info, screenshotPath)
-				print("wrote \(screenshotPath)")
-			}
+	if let maxFrames, frameCount >= maxFrames, let screenshotPath {
+		// The readback moves the image out of PRESENT_SRC, so this frame isn't presented.
+		let info = SKImageInfo(colorspace: nil, width: frame.width, height: frame.height, colorType: .rgba8888, alphaType: .premul)
+		if let (pixels, rowBytes) = context.readPixels(surface, info) {
+			writePNG(pixels, rowBytes, info, screenshotPath)
+			print("wrote \(screenshotPath)")
 		}
 		break
 	}
 	cw_present(window, &frame)
+	if let maxFrames, frameCount >= maxFrames { break }
 }
+finishGPUWork()
 let elapsed = seconds(clock.now - start)
 print("\(frameCount) frames in \(Int(elapsed * 1000)) ms (\(Int(Float(frameCount) / elapsed)) fps average), \(cw_recreate_count(window)) swapchain recreations")

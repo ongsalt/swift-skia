@@ -91,10 +91,14 @@ jobs:
         if: matrix.target == 'linux'
         run: |
           stage=builds/${{ matrix.target }}-${{ matrix.arch }}
-          clang -std=c11 -O1 native/smoke.c -I"$stage" -L"$stage" -lSkiaSharp \
+          clang -std=c11 -O1 native/smoke.c -I"$stage/headers" -L"$stage" -lSkiaSharp \
             -lstdc++ -lm -lpthread -ldl -o smoke
           ./smoke "$stage/smoke.png"
           test -s "$stage/smoke.png"
+          # The C++ API through the staged headers, with no flags (SkUserConfig.h supplies them).
+          clang++ -std=c++20 -O1 native/smoke_cpp.cpp -I"$stage/headers" -L"$stage" -lSkiaSharp \
+            -lstdc++ -lm -lpthread -ldl -o smoke_cpp
+          ./smoke_cpp
 
       - name: Check every object in the archive links
         if: matrix.target == 'linux'
@@ -116,10 +120,14 @@ jobs:
           MSYS_NO_PATHCONV: "1"
         run: |
           stage=builds/${{ matrix.target }}-${{ matrix.arch }}
-          clang-cl /nologo /O1 /MD native/smoke.c /I "$stage" /Fe:smoke.exe -fuse-ld=lld \
+          clang-cl /nologo /O1 /MD native/smoke.c /I "$stage/headers" /Fe:smoke.exe -fuse-ld=lld \
             /link "$stage/SkiaSharp.lib" ole32.lib oleaut32.lib user32.lib usp10.lib fontsub.lib gdi32.lib
           ./smoke.exe "$stage/smoke.png"
           test -s "$stage/smoke.png"
+          # The C++ API through the staged headers, with no flags (SkUserConfig.h supplies them).
+          clang-cl /nologo /O1 /MD /std:c++20 native/smoke_cpp.cpp /I "$stage/headers" /Fe:smoke_cpp.exe -fuse-ld=lld \
+            /link "$stage/SkiaSharp.lib" ole32.lib oleaut32.lib user32.lib usp10.lib fontsub.lib gdi32.lib
+          ./smoke_cpp.exe
 
       - name: Check every object in the library links on Windows
         if: matrix.target == 'windows'

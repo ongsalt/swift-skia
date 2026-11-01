@@ -35,9 +35,8 @@ def bundle(stage: pathlib.Path, version: str, dist: pathlib.Path) -> None:
     variant = root / manifest["name"]
     variant.mkdir()
     shutil.copy2(stage / manifest["library"], variant / manifest["library"])
-    # The headers include each other as "include/c/...", so the search path is
-    # the directory containing include/.
-    shutil.copytree(stage / "include", variant / "headers" / "include")
+    # Everything under headers/skia/, so dependents only see `skia/...` (see stage_headers.py).
+    shutil.copytree(stage / "headers", variant / "headers")
 
     info = {
         "schemaVersion": "1.0",
@@ -55,7 +54,8 @@ def bundle(stage: pathlib.Path, version: str, dist: pathlib.Path) -> None:
     }
     (root / "info.json").write_text(json.dumps(info, indent=2) + "\n")
     (root / "skia_version.json").write_text(
-        json.dumps({"version": version, "mono_skia_commit": manifest["skiaCommit"]}, indent=2) + "\n")
+        json.dumps({"version": version, "mono_skia_commit": manifest["skiaCommit"],
+                    "defines": manifest["defines"]}, indent=2) + "\n")
 
     zip_path = dist / f"{name}.zip"
     zip_path.unlink(missing_ok=True)

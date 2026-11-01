@@ -78,5 +78,7 @@ let package = Package(
 				"CVulkanTestSupport",
 			]
 		),
-	]
+	],
+	// Skia's C++ headers (used by Sources/CSkia/*.cpp) need C++20.
+	cxxLanguageStandard: .cxx20
 )

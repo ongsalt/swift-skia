@@ -5,6 +5,9 @@
 
 typedef struct cw_window cw_window;
 
+/// Frames the CPU may record ahead of the GPU. Each has its own acquire semaphore.
+#define CW_FRAMES_IN_FLIGHT 2
+
 typedef struct {
     void* instance;             // VkInstance
     void* physicalDevice;       // VkPhysicalDevice
@@ -23,6 +26,8 @@ typedef struct {
     int32_t height;
     int32_t format;  // VkFormat
     uint32_t usage;  // VkImageUsageFlags
+    uint64_t acquiredSemaphore;        // VkSemaphore: signaled once the image is ready to draw into
+    uint64_t renderFinishedSemaphore;  // VkSemaphore: signal it when drawing is done; present waits on it
 } cw_frame;
 
 /// Validation layers are enabled when CW_VALIDATION is set.
@@ -34,11 +39,16 @@ const char* cw_device_name(const cw_window* window);
 /// Handles window events. Returns false once the window should close.
 bool cw_poll(cw_window* window);
 
-/// Acquires the next swapchain image, recreating the swapchain after a resize.
-bool cw_acquire(cw_window* window, cw_frame* frame);
+/// True when the next cw_acquire recreates the swapchain. Its images then go away: first finish
+/// every GPU use of them and drop anything wrapping them.
+bool cw_recreate_pending(const cw_window* window);
 
-/// Moves the image from COLOR_ATTACHMENT_OPTIMAL (where Graphite leaves it after drawing) to
-/// PRESENT_SRC and presents it. Call after a synchronous Graphite submit.
+/// Acquires the next swapchain image for frame slot `slot` (0..<CW_FRAMES_IN_FLIGHT), recreating
+/// the swapchain after a resize. The slot's previous frame must have finished on the GPU.
+bool cw_acquire(cw_window* window, uint32_t slot, cw_frame* frame);
+
+/// Presents the frame once its renderFinishedSemaphore is signaled. The image must be in
+/// VK_IMAGE_LAYOUT_PRESENT_SRC_KHR by then.
 bool cw_present(cw_window* window, const cw_frame* frame);
 
 /// Requests a new window size (the compositor may ignore it, e.g. when tiling).
