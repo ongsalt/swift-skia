@@ -126,7 +126,7 @@ import Testing
 			recording,
 			options: SKGraphiteInsertOptions(
 				targetSurface: surface,
-				targetVulkanImageLayout: (6 /* TRANSFER_SRC_OPTIMAL */, device.raw.queueFamily),
+				targetTextureState: SKGraphiteMutableTextureState.vulkan(6 /* TRANSFER_SRC_OPTIMAL */, device.raw.queueFamily),
 				finished: { result.calls.append($0) }))
 		var sync = SKGraphiteSubmitInfo()
 		sync.fSync = true

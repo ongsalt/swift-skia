@@ -1,4 +1,4 @@
-/// A caller-owned GPU texture described to Graphite, e.g. a swapchain `VkImage`.
+/// A caller-owned GPU texture described to Graphite, e.g. a swapchain image.
 ///
 /// Unique owner of the description only: deleting it doesn't free the GPU image. Surfaces wrapping
 /// it keep their own reference, so it can be dropped once the surface exists (as in rust-skia).
@@ -9,20 +9,7 @@ public struct SKGraphiteBackendTexture: ~Copyable {
 		__sk_graphite_backend_texture_delete(handle)
 	}
 
-	/// Wraps a `VkImage` whose memory is already bound.
-	/// - `imageLayout`: the `VkImageLayout` the image is in now (`VK_IMAGE_LAYOUT_UNDEFINED` = 0 for a
-	///   freshly acquired swapchain image whose contents may be discarded).
-	public static func vulkan(
-		_ width: Int32, _ height: Int32, _ info: SKGraphiteVkTextureInfo, _ imageLayout: Int32,
-		_ queueFamilyIndex: UInt32, _ image: OpaquePointer
-	) -> SKGraphiteBackendTexture? {
-		var info = info
-		guard let handle = __sk_graphite_vk_backend_texture_new(width, height, &info, imageLayout, queueFamilyIndex, UnsafeMutableRawPointer(image))
-		else { return nil }
-		return SKGraphiteBackendTexture(handle: handle)
-	}
-
-	private init(handle: OpaquePointer) {
+	init(handle: OpaquePointer) {
 		self.handle = handle
 	}
 

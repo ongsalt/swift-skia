@@ -1,31 +1,23 @@
-/// What Graphite needs besides the recording to hand a frame to presentation: the layout to leave
-/// the target image in, semaphores to order its GPU work, and a completion callback.
-///
-/// Covers `skgpu::graphite::InsertRecordingInfo` (through Sources/CSkia/swsk_graphite.cpp), which
-/// SkiaSharp's C API doesn't expose yet.
+/// `skgpu::graphite::InsertRecordingInfo` beyond the recording (Sources/CSkia/swsk_graphite.cpp).
 public struct SKGraphiteInsertOptions {
-	/// The surface a deferred-canvas recording draws into; nil for ordinary recordings.
+	/// Required with `targetTextureState`, and for recordings made with a deferred canvas.
 	public var targetSurface: SKSurface?
-	/// Vulkan: the `VkImageLayout` (raw value) to leave the target's image in, owned by
-	/// `queueFamilyIndex`, e.g. `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR` (1000001002) before presenting.
-	public var targetVulkanImageLayout: (layout: Int32, queueFamilyIndex: UInt32)?
-	/// `VkSemaphore` handles waited on before the recording's GPU work runs.
-	public var waitSemaphores: [UInt64]
-	/// `VkSemaphore` handles signaled once the recording's GPU work is done.
-	public var signalSemaphores: [UInt64]
-	/// Called once the GPU work finished (`true`) or failed (`false`), from inside
-	/// `SKGraphiteContext.submit` or `checkAsyncWorkCompletion`.
+	public var targetTextureState: SKGraphiteMutableTextureState?
+	public var waitSemaphores: [SKGraphiteBackendSemaphore]
+	public var signalSemaphores: [SKGraphiteBackendSemaphore]
+	/// Called once with whether the GPU work succeeded, from inside `submit` or
+	/// `checkAsyncWorkCompletion`.
 	public var finished: ((Bool) -> Void)?
 
 	public init(
 		targetSurface: SKSurface? = nil,
-		targetVulkanImageLayout: (layout: Int32, queueFamilyIndex: UInt32)? = nil,
-		waitSemaphores: [UInt64] = [],
-		signalSemaphores: [UInt64] = [],
+		targetTextureState: SKGraphiteMutableTextureState? = nil,
+		waitSemaphores: [SKGraphiteBackendSemaphore] = [],
+		signalSemaphores: [SKGraphiteBackendSemaphore] = [],
 		finished: ((Bool) -> Void)? = nil
 	) {
 		self.targetSurface = targetSurface
-		self.targetVulkanImageLayout = targetVulkanImageLayout
+		self.targetTextureState = targetTextureState
 		self.waitSemaphores = waitSemaphores
 		self.signalSemaphores = signalSemaphores
 		self.finished = finished
@@ -33,8 +25,7 @@ public struct SKGraphiteInsertOptions {
 }
 
 extension SKGraphiteContext {
-	/// Queues a recording's work with presentation options. The recording stays valid and can be
-	/// inserted again.
+	/// The recording stays valid and can be inserted again.
 	@discardableResult
 	public mutating func insertRecording(
 		_ recording: borrowing SKGraphiteRecording, options: SKGraphiteInsertOptions
@@ -45,26 +36,25 @@ extension SKGraphiteContext {
 		}
 		var info = swsk_graphite_insert_options_t()
 		info.targetSurface = options.targetSurface
-		if let state = options.targetVulkanImageLayout {
-			info.hasTargetVkImageLayout = true
-			info.targetVkImageLayout = state.layout
-			info.targetVkQueueFamilyIndex = state.queueFamilyIndex
-		}
+		info.targetTextureState = options.targetTextureState?.handle
 		if let body = options.finished {
 			info.finishedProc = { context, success in
 				Unmanaged<Finished>.fromOpaque(context!).takeRetainedValue().body(success)
 			}
-			// Released by the callback, which Graphite calls exactly once, failure included.
 			info.finishedContext = Unmanaged.passRetained(Finished(body)).toOpaque()
 		}
+		let wait: [OpaquePointer?] = options.waitSemaphores.map(\.handle)
+		let signal: [OpaquePointer?] = options.signalSemaphores.map(\.handle)
 		let handle = self.handle
-		return options.waitSemaphores.withUnsafeBufferPointer { wait in
-			options.signalSemaphores.withUnsafeBufferPointer { signal in
-				info.waitVkSemaphores = wait.baseAddress
-				info.waitVkSemaphoreCount = Int32(wait.count)
-				info.signalVkSemaphores = signal.baseAddress
-				info.signalVkSemaphoreCount = Int32(signal.count)
-				return swsk_graphite_context_insert_recording(handle, recording.handle, &info)
+		return withExtendedLifetime(options) {
+			wait.withUnsafeBufferPointer { wait in
+				signal.withUnsafeBufferPointer { signal in
+					info.waitSemaphores = wait.baseAddress
+					info.waitSemaphoreCount = Int32(wait.count)
+					info.signalSemaphores = signal.baseAddress
+					info.signalSemaphoreCount = Int32(signal.count)
+					return swsk_graphite_context_insert_recording(handle, recording.handle, &info)
+				}
 			}
 		}
 	}

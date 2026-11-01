@@ -6,8 +6,6 @@
 #include "skia/include/gpu/graphite/Context.h"
 #include "skia/include/gpu/graphite/GraphiteTypes.h"
 #include "skia/include/gpu/graphite/Recording.h"
-#include "skia/include/gpu/graphite/vk/VulkanGraphiteTypes.h"
-#include "skia/include/gpu/vk/VulkanMutableTextureState.h"
 
 #include <vector>
 
@@ -15,13 +13,12 @@ using namespace skgpu::graphite;
 
 namespace {
 
-std::vector<BackendSemaphore> vkSemaphores(const uint64_t* handles, int32_t count) {
-    std::vector<BackendSemaphore> semaphores;
-    semaphores.reserve(count > 0 ? count : 0);
+std::vector<BackendSemaphore> semaphores(const swsk_graphite_backend_semaphore_t* const* list, int32_t count) {
+    std::vector<BackendSemaphore> result;
     for (int32_t i = 0; i < count; i++) {
-        semaphores.push_back(BackendSemaphores::MakeVulkan(reinterpret_cast<VkSemaphore>(handles[i])));
+        result.push_back(*reinterpret_cast<const BackendSemaphore*>(list[i]));
     }
-    return semaphores;
+    return result;
 }
 
 struct Finished {
@@ -37,7 +34,15 @@ void finished(GpuFinishedContext context, skgpu::CallbackResult result) {
 
 }  // namespace
 
-sk_graphite_insert_status_t swsk_graphite_context_insert_recording(
+extern "C" void swsk_graphite_backend_semaphore_delete(swsk_graphite_backend_semaphore_t* semaphore) {
+    delete reinterpret_cast<BackendSemaphore*>(semaphore);
+}
+
+extern "C" void swsk_graphite_mutable_texture_state_delete(swsk_graphite_mutable_texture_state_t* state) {
+    delete reinterpret_cast<skgpu::MutableTextureState*>(state);
+}
+
+extern "C" sk_graphite_insert_status_t swsk_graphite_context_insert_recording(
         sk_graphite_context_t* context,
         sk_graphite_recording_t* recording,
         const swsk_graphite_insert_options_t* options) {
@@ -45,16 +50,13 @@ sk_graphite_insert_status_t swsk_graphite_context_insert_recording(
     info.fRecording = reinterpret_cast<Recording*>(recording);
 
     std::vector<BackendSemaphore> wait, signal;
-    skgpu::MutableTextureState state;
     if (options) {
         info.fTargetSurface = reinterpret_cast<SkSurface*>(options->targetSurface);
-        if (options->hasTargetVkImageLayout) {
-            state = skgpu::MutableTextureStates::MakeVulkan(
-                    static_cast<VkImageLayout>(options->targetVkImageLayout), options->targetVkQueueFamilyIndex);
-            info.fTargetTextureState = &state;
-        }
-        wait = vkSemaphores(options->waitVkSemaphores, options->waitVkSemaphoreCount);
-        signal = vkSemaphores(options->signalVkSemaphores, options->signalVkSemaphoreCount);
+        // Graphite only reads it.
+        info.fTargetTextureState = const_cast<skgpu::MutableTextureState*>(
+                reinterpret_cast<const skgpu::MutableTextureState*>(options->targetTextureState));
+        wait = semaphores(options->waitSemaphores, options->waitSemaphoreCount);
+        signal = semaphores(options->signalSemaphores, options->signalSemaphoreCount);
         info.fNumWaitSemaphores = wait.size();
         info.fWaitSemaphores = wait.data();
         info.fNumSignalSemaphores = signal.size();
@@ -65,7 +67,7 @@ sk_graphite_insert_status_t swsk_graphite_context_insert_recording(
         }
     }
 
-    // Graphite calls the finished proc on failure too, so the Finished box is always freed.
+    // Graphite calls finished() on failure too, so the box is always freed.
     InsertStatus::V status = reinterpret_cast<Context*>(context)->insertRecording(info);
     return static_cast<sk_graphite_insert_status_t>(status);
 }

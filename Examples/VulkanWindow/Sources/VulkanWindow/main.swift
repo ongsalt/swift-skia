@@ -48,7 +48,7 @@ func colorType(_ format: Int32) -> SKColorType {
 	}
 }
 
-let presentSrcLayout: Int32 = 1_000_001_002  // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+let presentable = SKGraphiteMutableTextureState.vulkan(1_000_001_002 /* VK_IMAGE_LAYOUT_PRESENT_SRC_KHR */, device.queueFamily)!
 
 /// A frame the CPU recorded and the GPU may still be working on.
 final class FrameSlot {
@@ -138,9 +138,9 @@ while cw_poll(window) {
 		recording,
 		options: SKGraphiteInsertOptions(
 			targetSurface: surface,
-			targetVulkanImageLayout: (presentSrcLayout, device.queueFamily),
-			waitSemaphores: [frame.acquiredSemaphore],
-			signalSemaphores: [frame.renderFinishedSemaphore],
+			targetTextureState: presentable,
+			waitSemaphores: [SKGraphiteBackendSemaphore.vulkan(frame.acquiredSemaphore)!],
+			signalSemaphores: [SKGraphiteBackendSemaphore.vulkan(frame.renderFinishedSemaphore)!],
 			finished: { success in
 				if !success { print("frame \(frameCount): GPU work failed") }
 				slot.inFlight = false

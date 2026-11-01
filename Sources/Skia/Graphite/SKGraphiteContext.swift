@@ -3,49 +3,16 @@
 /// Unique owner, like rust-skia's `graphite::Context` (`RefHandle`): `~Copyable`, deleted in `deinit`.
 public struct SKGraphiteContext: ~Copyable {
 	public let handle: OpaquePointer
-	/// Keeps the Vulkan proc-lookup state alive for as long as Skia may call back into it.
-	private let vulkanProcs: UnsafeMutablePointer<SKGraphiteVulkanBackend.Procs>?
+	/// Backend state Skia calls back into while the context lives (e.g. Vulkan's proc lookup).
+	private let keepAlive: AnyObject?
 
-	private init(handle: OpaquePointer, vulkanProcs: UnsafeMutablePointer<SKGraphiteVulkanBackend.Procs>?) {
+	init(handle: OpaquePointer, keepAlive: AnyObject?) {
 		self.handle = handle
-		self.vulkanProcs = vulkanProcs
+		self.keepAlive = keepAlive
 	}
 
 	deinit {
 		__sk_graphite_context_delete(handle)
-		vulkanProcs?.deinitialize(count: 1)
-		vulkanProcs?.deallocate()
-	}
-
-	/// Creates a Vulkan-backed context on the caller's device. Returns `nil` if Skia rejects the device.
-	public static func vulkan(
-		_ backend: SKGraphiteVulkanBackend, _ options: SKGraphiteContextOptions? = nil
-	) -> SKGraphiteContext? {
-		let procs = UnsafeMutablePointer<SKGraphiteVulkanBackend.Procs>.allocate(capacity: 1)
-		procs.initialize(to: backend.procs)
-		let initInfo = SKGraphiteVkBackendContext(
-			fInstance: backend.instance,
-			fPhysicalDevice: backend.physicalDevice,
-			fDevice: backend.device,
-			fQueue: backend.queue,
-			fGraphicsQueueIndex: backend.graphicsQueueIndex,
-			fMaxAPIVersion: backend.maxAPIVersion,
-			fGetProc: SKGraphiteVulkanBackend.getProc,
-			fGetProcUserData: UnsafeMutableRawPointer(procs),
-			fProtectedContext: backend.isProtected)
-
-		let handle: OpaquePointer?
-		if var options {
-			handle = __sk_graphite_context_make_vulkan(initInfo, &options)
-		} else {
-			handle = __sk_graphite_context_make_vulkan(initInfo, nil)
-		}
-		guard let handle else {
-			procs.deinitialize(count: 1)
-			procs.deallocate()
-			return nil
-		}
-		return SKGraphiteContext(handle: handle, vulkanProcs: procs)
 	}
 
 	public var backend: SKGraphiteBackend { __sk_graphite_context_get_backend(handle) }
