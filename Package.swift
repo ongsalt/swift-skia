@@ -19,7 +19,7 @@ let skiaLib: Target =
 			name: "SkiaLib",
 			url:
 				"https://github.com/ongsalt/swift-skia/releases/download/skia-a9e4fac6f758/skia.artifactbundleindex",
-			checksum: "fb66c9f179e8acc9afc0d311784ad7ad3b2c52cbf7b07409d2d9f87a83808730"
+			checksum: "2da894c95c1bfef80e4e258585764bd5d332017e1eea91a32238f06833b8ec55"
 		)
 	}
 
