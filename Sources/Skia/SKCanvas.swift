@@ -47,7 +47,7 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_scale(handle, s, s)
 	}
 
-	public func rotateDegrees(_ degrees: Float) {
+	public func rotate(_ degrees: Float) {
 		__sk_canvas_rotate_degrees(handle, degrees)
 	}
 
@@ -220,7 +220,7 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_draw_image_rect(handle, image, &source, &dest, &sampling, paint?.handle)
 	}
 
-	public func drawText(_ text: String, _ x: Float, _ y: Float, _ font: SKFont, _ paint: SKPaint) {
+	public func drawString(_ text: String, _ x: Float, _ y: Float, _ font: SKFont, _ paint: SKPaint) {
 		__sk_canvas_draw_simple_text(handle, text.utf8.span.bytes, .utf8, x, y, font.handle, paint.handle)
 	}
 
@@ -236,6 +236,87 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		}
 		__sk_canvas_draw_picture(handle, picture, &matrix, paint?.handle)
 	}
+
+	// MARK: Round rects
+
+	public func clipRRect(_ rrect: SKRRect, _ op: SKClipOperation = .intersect, _ doAntiAlias: Bool = false) {
+		__sk_canvas_clip_rrect_with_operation(handle, rrect.handle, op, doAntiAlias)
+	}
+
+	public func drawRRect(_ rrect: SKRRect, _ paint: SKPaint) {
+		__sk_canvas_draw_rrect(handle, rrect.handle, paint.handle)
+	}
+
+	/// The area between `outer` and `inner`.
+	public func drawDRRect(_ outer: SKRRect, _ inner: SKRRect, _ paint: SKPaint) {
+		__sk_canvas_draw_drrect(handle, outer.handle, inner.handle, paint.handle)
+	}
+
+	// MARK: More drawing
+
+	public func drawColor(_ color: SKColor4f, _ mode: SKBlendMode = .srcOver) {
+		__sk_canvas_draw_color4f(handle, color, mode)
+	}
+
+	public func drawVertices(_ vertices: SKVertices, _ mode: SKBlendMode, _ paint: SKPaint) {
+		__sk_canvas_draw_vertices(handle, vertices, mode, paint.handle)
+	}
+
+	public func drawDrawable(_ drawable: SKDrawable, _ matrix: SKMatrix? = nil) {
+		_skWithOptionalPointer(matrix) { __sk_canvas_draw_drawable(handle, drawable, $0) }
+	}
+
+	/// Stretches `image` into `dst`, keeping the corners outside `center` unscaled.
+	public func drawImageNine(
+		_ image: SKImage, _ center: SKRectI, _ dst: SKRect, _ filter: SKFilterMode, _ paint: SKPaint? = nil
+	) {
+		var (center, dst) = (center, dst)
+		__sk_canvas_draw_image_nine(handle, image, &center, &dst, filter, paint?.handle)
+	}
+
+	/// A Coons patch: 4 cubic edges (12 points, clockwise from the top left), optional corner
+	/// colors and texture coordinates for the paint's shader.
+	public func drawPatch(
+		_ cubics: [12 of SKPoint], _ colors: [4 of SKColor]?, _ texCoords: [4 of SKPoint]?,
+		_ mode: SKBlendMode, _ paint: SKPaint
+	) {
+		cubics.span.withUnsafeBufferPointer { cubics in
+			withOptionalBuffer(colors) { colors in
+				withOptionalBuffer(texCoords) { texCoords in
+					__sk_canvas_draw_patch(handle, cubics.baseAddress, colors, texCoords, mode, paint.handle)
+				}
+			}
+		}
+	}
+
+	/// Draws `tex[i]` from `atlas` transformed by `xform[i]`, tinted by `colors[i]` with `mode`.
+	public func drawAtlas(
+		_ atlas: SKImage, _ xform: [SKRotationScaleMatrix], _ tex: [SKRect], _ colors: [SKColor]?,
+		_ mode: SKBlendMode, _ sampling: SKSamplingOptions = SKSamplingOptions(),
+		_ cullRect: SKRect? = nil, _ paint: SKPaint? = nil
+	) {
+		precondition(xform.count == tex.count && (colors?.count ?? tex.count) == tex.count,
+			"drawAtlas needs one transform, rect and color per sprite")
+		withUnsafePointer(to: sampling) { sampling in
+			_skWithOptionalPointer(cullRect) { cullRect in
+				__sk_canvas_draw_atlas(handle, atlas, xform.span, tex.span, colors?.span, mode, sampling, cullRect, paint?.handle)
+			}
+		}
+	}
+
+	// MARK: Annotations (used by document backends such as PDF)
+
+	public func drawAnnotation(_ rect: SKRect, _ key: String, _ value: SKData?) {
+		var rect = rect
+		__sk_canvas_draw_annotation(handle, &rect, key, value)
+	}
+}
+
+private func withOptionalBuffer<let count: Int, T, R>(
+	_ array: [count of T]?, _ body: (UnsafePointer<T>?) -> R
+) -> R {
+	guard let array else { return body(nil) }
+	return array.span.withUnsafeBufferPointer { body($0.baseAddress) }
 }
 
 /// Gives class owners a `mutating` accessor, which classes can't declare themselves,

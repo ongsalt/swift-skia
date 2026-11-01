@@ -86,7 +86,7 @@ public final class SKFont {
 		__sk_font_measure_text(handle, text.utf8.span.bytes, .utf8, nil, paint?.handle)
 	}
 
-	public func glyphs(_ text: String) -> [UInt16] {
+	public func textToGlyphs(_ text: String) -> [UInt16] {
 		let bytes = text.utf8.span.bytes
 		var none: MutableSpan<UInt16>? = nil
 		let count = __sk_font_text_to_glyphs(handle, bytes, .utf8, &none)
@@ -94,5 +94,71 @@ public final class SKFont {
 		var span: MutableSpan<UInt16>? = glyphs.mutableSpan
 		_ = __sk_font_text_to_glyphs(handle, bytes, .utf8, &span)
 		return glyphs
+	}
+
+	public func unicharToGlyph(_ unichar: Unicode.Scalar) -> UInt16 {
+		__sk_font_unichar_to_glyph(handle, Int32(bitPattern: unichar.value))
+	}
+
+	public func unicharsToGlyphs(_ unichars: [Unicode.Scalar]) -> [UInt16] {
+		let unichars = unichars.map { Int32(bitPattern: $0.value) }
+		var glyphs = [UInt16](repeating: 0, count: unichars.count)
+		var span = glyphs.mutableSpan
+		__sk_font_unichars_to_glyphs(handle, unichars.span, &span)
+		return glyphs
+	}
+
+	/// Advance widths of `glyphs`.
+	public func getWidths(_ glyphs: [UInt16], _ paint: SKPaint? = nil) -> [Float] {
+		var widths = [Float](repeating: 0, count: glyphs.count)
+		var span: MutableSpan<Float>? = widths.mutableSpan
+		var noBounds: MutableSpan<SKRect>? = nil
+		__sk_font_get_widths_bounds(handle, glyphs.span, &span, &noBounds, paint?.handle)
+		return widths
+	}
+
+	/// Bounds of each glyph, relative to its origin.
+	public func getBounds(_ glyphs: [UInt16], _ paint: SKPaint? = nil) -> [SKRect] {
+		var bounds = [SKRect](repeating: SKRect(), count: glyphs.count)
+		var span: MutableSpan<SKRect>? = bounds.mutableSpan
+		var noWidths: MutableSpan<Float>? = nil
+		__sk_font_get_widths_bounds(handle, glyphs.span, &noWidths, &span, paint?.handle)
+		return bounds
+	}
+
+	/// Where each glyph is drawn when laid out in a row starting at `origin`.
+	public func getPos(_ glyphs: [UInt16], _ origin: SKPoint = SKPoint()) -> [SKPoint] {
+		var positions = [SKPoint](repeating: SKPoint(), count: glyphs.count)
+		var span = positions.mutableSpan
+		var origin = origin
+		__sk_font_get_pos(handle, glyphs.span, &span, &origin)
+		return positions
+	}
+
+	public func getXPos(_ glyphs: [UInt16], _ origin: Float = 0) -> [Float] {
+		var positions = [Float](repeating: 0, count: glyphs.count)
+		var span = positions.mutableSpan
+		__sk_font_get_xpos(handle, glyphs.span, &span, origin)
+		return positions
+	}
+
+	/// Nil for glyphs without an outline (e.g. bitmap glyphs).
+	public func getPath(_ glyph: UInt16) -> SKPath? {
+		let path = SKPath()
+		return __sk_font_get_path(handle, glyph, path.handle) ? path : nil
+	}
+
+	/// How much of `text` fits in `maxWidth`: its length in UTF-8 bytes and its width.
+	public func breakText(_ text: String, _ maxWidth: Float, _ paint: SKPaint? = nil) -> (byteCount: Int, width: Float) {
+		var width: Float = 0
+		let count = __sk_font_break_text(handle, text.utf8.span.bytes, .utf8, maxWidth, &width, paint?.handle)
+		return (count, width)
+	}
+
+	/// `SkTextUtils::GetPath`: the outlines of `text` drawn at (`x`, `y`).
+	public func getTextPath(_ text: String, _ x: Float, _ y: Float) -> SKPath {
+		let path = SKPath()
+		__sk_text_utils_get_path(text.utf8.span.bytes, .utf8, x, y, handle, path.handle)
+		return path
 	}
 }

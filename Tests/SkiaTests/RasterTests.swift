@@ -3,7 +3,7 @@ import Testing
 
 @Suite struct RasterTests {
 	func makeSurface(_ width: Int32, _ height: Int32) throws -> SKSurface {
-		var info = SKImageInfo(colorspace: nil, width: width, height: height, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: width, height: height, colorType: .rgba8888, alphaType: .premul)
 		return try #require(SKSurface.raster(info, 0, nil))
 	}
 
@@ -61,13 +61,13 @@ import Testing
 @Suite struct PaintTests {
 	@Test func propertiesRoundTrip() {
 		let paint = SKPaint()
-		paint.isAntialias = true
+		paint.isAntiAlias = true
 		paint.color = 0x8011_2233
 		paint.style = .stroke
 		paint.strokeWidth = 3
 		paint.strokeCap = .round
 		paint.blendMode = .multiply
-		#expect(paint.isAntialias)
+		#expect(paint.isAntiAlias)
 		#expect(paint.color == 0x8011_2233)
 		#expect(paint.style == .stroke)
 		#expect(paint.strokeWidth == 3)
@@ -102,16 +102,16 @@ import Testing
 		builder.close()
 		let path = builder.detach()
 		#expect(path.bounds == SKRect(left: 10, top: 10, right: 30, bottom: 40))
-		#expect(path.pointCount == 3)
+		#expect(path.countPoints() == 3)
 		#expect(path.contains(28, 15))
 		#expect(!path.contains(12, 38))
-		#expect(path.lastPoint != nil)
+		#expect(path.lastPt != nil)
 	}
 
 	@Test func svgRoundTrip() throws {
-		let path = try #require(SKPath.parseSvgString("M0 0L10 0L10 10Z"))
+		let path = try #require(SKPath.fromSVGString("M0 0L10 0L10 10Z"))
 		#expect(path.points.count == 3)
-		let again = try #require(SKPath.parseSvgString(path.svgString))
+		let again = try #require(SKPath.fromSVGString(path.toSVGString()))
 		#expect(again.bounds == path.bounds)
 	}
 
@@ -131,20 +131,14 @@ import Testing
 		#expect(font.size == 20)
 		font.size = 30
 		#expect(font.size == 30)
-		#expect(font.glyphs("abc").count == 3)
+		#expect(font.textToGlyphs("abc").count == 3)
 		#expect(font.measureText("") == 0)
-	}
-}
-
-extension SKRect: @retroactive Equatable {
-	public static func == (a: SKRect, b: SKRect) -> Bool {
-		a.left == b.left && a.top == b.top && a.right == b.right && a.bottom == b.bottom
 	}
 }
 
 @Suite struct EncodeTests {
 	func drawnSurface() throws -> SKSurface {
-		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.raster(info, 0, nil))
 		let paint = SKPaint()
 		paint.color = 0xFF00_80FF
@@ -159,7 +153,7 @@ extension SKRect: @retroactive Equatable {
 			return
 		}
 		let (width, height, rowBytes) = (pixmap.width, pixmap.height, pixmap.rowBytes)
-		let (color, byteCount, isOpaque) = (pixmap.pixelColor(2, 2), pixmap.bytes.byteCount, pixmap.isOpaque)
+		let (color, byteCount, isOpaque) = (pixmap.getColor(2, 2), pixmap.bytes.byteCount, pixmap.computeIsOpaque())
 		#expect(width == 6)
 		#expect(height == 4)
 		#expect(rowBytes >= 6 * 4)
@@ -224,7 +218,7 @@ extension SKRect: @retroactive Equatable {
 	}
 
 	@Test func pixmapBytesStopAtLastPixel() throws {
-		var info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: 6, height: 4, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.raster(info, 32, nil))  // padded rows
 		guard let pixmap = surface.peekPixels() else {
 			Issue.record("no pixels")
@@ -236,7 +230,7 @@ extension SKRect: @retroactive Equatable {
 	}
 
 	@Test func pixmapEraseReadAndSubset() throws {
-		var info = SKImageInfo(colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: 4, height: 4, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.raster(info, 0, nil))
 		guard let pixmap = surface.peekPixels() else {
 			Issue.record("no pixels")
@@ -248,7 +242,7 @@ extension SKRect: @retroactive Equatable {
 		var outSpan = out.mutableSpan
 		var outBytes = outSpan.mutableBytes
 		let read = pixmap.readPixels(info, &outBytes, 16)
-		let corner = pixmap.pixelColor(3, 3)
+		let corner = pixmap.getColor(3, 3)
 		let subsetWidth = pixmap.extractSubset(SKRectI(left: 1, top: 1, right: 3, bottom: 4))?.width
 		#expect(read)
 		#expect(Array(out[0..<4]) == [0x00, 0xFF, 0x00, 0xFF])  // green, RGBA bytes
@@ -263,7 +257,7 @@ extension SKRect: @retroactive Equatable {
 	}
 
 	@Test func rasterCopyFromPixmap() throws {
-		var info = SKImageInfo(colorspace: nil, width: 3, height: 2, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: 3, height: 2, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.raster(info, 0, nil))
 		surface.canvas.clear(0xFF12_3456)
 		guard let pixmap = surface.peekPixels() else {
@@ -281,7 +275,7 @@ extension SKRect: @retroactive Equatable {
 		#expect(manager.matchFamilyStyleCharacter(nil, .normal, ["en"], "A") == nil)
 		let set = try #require(manager.createStyleset(0))
 		if set.count > 0 {
-			let (style, _) = set.style(0)
+			let (style, _) = set.getStyle(0)
 			#expect(style.weight > 0)
 		}
 	}
@@ -289,13 +283,13 @@ extension SKRect: @retroactive Equatable {
 
 @Suite struct SpanOverloadTests {
 	func pixel(_ shader: SKShader?, _ x: Int32) throws -> SKColor {
-		var info = SKImageInfo(colorspace: nil, width: 100, height: 1, colorType: .rgba8888, alphaType: .premul)
+		let info = SKImageInfo(colorspace: nil, width: 100, height: 1, colorType: .rgba8888, alphaType: .premul)
 		var surface = try #require(SKSurface.raster(info, 0, nil))
 		let paint = SKPaint()
 		paint.shader = shader
 		surface.canvas.drawPaint(paint)
 		guard let pixmap = surface.peekPixels() else { return 0 }
-		return pixmap.pixelColor(x, 0)
+		return pixmap.getColor(x, 0)
 	}
 
 	@Test func gradientFromSpans() throws {
@@ -312,7 +306,7 @@ extension SKRect: @retroactive Equatable {
 
 	@Test func pathPointsAndPoly() throws {
 		let builder = SKPathBuilder()
-		builder.addPoly([SKPoint(x: 1, y: 2), SKPoint(x: 3, y: 4), SKPoint(x: 5, y: 0)], true)
+		builder.addPolygon([SKPoint(x: 1, y: 2), SKPoint(x: 3, y: 4), SKPoint(x: 5, y: 0)], true)
 		let path = builder.detach()
 		#expect(path.points.map(\.x) == [1, 3, 5])
 		#expect(SKPathEffect.createDash([4, 2].span, 0) != nil)
@@ -320,8 +314,8 @@ extension SKRect: @retroactive Equatable {
 
 	@Test func textBuffers() throws {
 		let font = SKFont(SKTypeface.default(.normal), 16)
-		#expect(font.glyphs("hello").count == 5)
-		#expect(font.glyphs("").isEmpty)
+		#expect(font.textToGlyphs("hello").count == 5)
+		#expect(font.textToGlyphs("").isEmpty)
 		#expect(font.measureText("hello") > font.measureText("hi"))
 	}
 
@@ -363,7 +357,7 @@ extension SKRect: @retroactive Equatable {
 		paint.shader = image.makeShader(.repeat, .repeat, sampling, identity)
 		target.canvas.drawPaint(paint)
 		guard let pixmap = target.peekPixels() else { return }
-		let color = pixmap.pixelColor(3, 3)
+		let color = pixmap.getColor(3, 3)
 		#expect(color == 0xFF00_FF00)
 	}
 }

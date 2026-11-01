@@ -18,7 +18,7 @@ guard var surface = SKSurface.raster(info, 0, nil) else {
 }
 
 let paint = SKPaint()
-paint.isAntialias = true
+paint.isAntiAlias = true
 
 // A five-pointed star.
 let builder = SKPathBuilder()
@@ -59,7 +59,7 @@ do {
 	canvas.drawPath(star, outline)
 
 	paint.color = 0xFFFF_FFFF
-	canvas.drawText("Skia from Swift", 40, 310, font, paint)
+	canvas.drawString("Skia from Swift", 40, 310, font, paint)
 }
 
 guard let png = surface.peekPixels()?.encode(.png) else { fatalError("PNG encoding failed") }

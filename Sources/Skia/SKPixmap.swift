@@ -29,7 +29,7 @@ public struct SKPixmap: ~Copyable, ~Escapable {
 
 	public var rowBytes: Int { __sk_pixmap_get_row_bytes(handle) }
 
-	public var isOpaque: Bool { __sk_pixmap_compute_is_opaque(handle) }
+	public func computeIsOpaque() -> Bool { __sk_pixmap_compute_is_opaque(handle) }
 
 	private func checkBounds(_ x: Int32, _ y: Int32) {
 		let info = info
@@ -37,20 +37,20 @@ public struct SKPixmap: ~Copyable, ~Escapable {
 	}
 
 	/// The pixel at (`x`, `y`), converted to unpremultiplied ARGB.
-	public func pixelColor(_ x: Int32, _ y: Int32) -> SKColor {
+	public func getColor(_ x: Int32, _ y: Int32) -> SKColor {
 		checkBounds(x, y)
 		return __sk_pixmap_get_pixel_color(handle, x, y)
 	}
 
 	/// The pixel at (`x`, `y`), converted to unpremultiplied RGBA floats.
-	public func pixelColor4f(_ x: Int32, _ y: Int32) -> SKColor4f {
+	public func getColor4f(_ x: Int32, _ y: Int32) -> SKColor4f {
 		checkBounds(x, y)
 		var color = SKColor4f()
 		__sk_pixmap_get_pixel_color4f(handle, x, y, &color)
 		return color
 	}
 
-	public func pixelAlpha(_ x: Int32, _ y: Int32) -> Float {
+	public func getAlphaf(_ x: Int32, _ y: Int32) -> Float {
 		checkBounds(x, y)
 		return __sk_pixmap_get_pixel_alphaf(handle, x, y)
 	}

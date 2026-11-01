@@ -58,7 +58,7 @@ extension SKFontManager {
 	}
 
 	/// The closest match in `family`, falling back to the default family (`family` may be nil).
-	public func legacyCreateTypeface(_ family: String?, _ style: SKFontStyle) -> SKTypeface? {
+	public func legacyMakeTypeface(_ family: String?, _ style: SKFontStyle) -> SKTypeface? {
 		__sk_fontmgr_legacy_create_typeface(self, family, style.handle)
 	}
 }
@@ -66,7 +66,7 @@ extension SKFontManager {
 extension SKTypeface {
 	/// The default family in the given style, from the default font manager.
 	public static func `default`(_ style: SKFontStyle = .normal) -> SKTypeface? {
-		SKFontManager.default.legacyCreateTypeface(nil, style)
+		SKFontManager.default.legacyMakeTypeface(nil, style)
 	}
 
 	public var fontStyle: SKFontStyle {
@@ -80,7 +80,7 @@ extension SKFontStyleSet {
 	}
 
 	/// The style at `index` (`0..<count`) and its name (e.g. "Bold Italic").
-	public func style(_ index: Int32) -> (style: SKFontStyle, name: String) {
+	public func getStyle(_ index: Int32) -> (style: SKFontStyle, name: String) {
 		let style = SKFontStyle()
 		let name = sk_string_new_empty()
 		defer { sk_string_destructor(name) }

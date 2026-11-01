@@ -36,7 +36,7 @@ print("Graphite on \(String(cString: cw_device_name(window)))")
 let titleFont = SKFont(SKTypeface.default(.bold), 40)
 let smallFont = SKFont(SKTypeface.default(.bold), 18)
 let paint = SKPaint()
-paint.isAntialias = true
+paint.isAntiAlias = true
 
 /// VkFormat → Skia color type, for the formats window.c picks from.
 func colorType(_ format: Int32) -> SKColorType {
@@ -82,9 +82,9 @@ func draw(_ canvas: borrowing SKCanvas, _ width: Float, _ height: Float, _ time:
 	}
 
 	paint.color = 0xFFFF_FFFF
-	canvas.drawText("Skia · Graphite · Vulkan", 32, 64, titleFont, paint)
+	canvas.drawString("Skia · Graphite · Vulkan", 32, 64, titleFont, paint)
 	paint.color = 0xB3FF_FFFF
-	canvas.drawText("\(Int(fps)) fps  \(Int(width))×\(Int(height))", 32, height - 24, smallFont, paint)
+	canvas.drawString("\(Int(fps)) fps  \(Int(width))×\(Int(height))", 32, height - 24, smallFont, paint)
 }
 
 func writePNG(_ pixels: [UInt8], _ rowBytes: Int, _ info: SKImageInfo, _ path: String) {

@@ -138,7 +138,7 @@ public final class SKPathBuilder {
 		__sk_pathbuilder_add_arc(handle, &oval, startAngle, sweepAngle)
 	}
 
-	public func addPoly(_ points: [SKPoint], _ close: Bool = true) {
+	public func addPolygon(_ points: [SKPoint], _ close: Bool = true) {
 		__sk_pathbuilder_add_poly(handle, points.span, close)
 	}
 
@@ -157,5 +157,14 @@ public final class SKPathBuilder {
 
 	public func reverseAddPath(_ path: SKPath) {
 		__sk_pathbuilder_reverse_add_path(handle, path.handle)
+	}
+
+	public func addRRect(_ rrect: SKRRect, _ direction: SKPathDirection = .clockwise) {
+		__sk_pathbuilder_add_rrect(handle, rrect.handle, direction)
+	}
+
+	/// `startIndex` picks the corner the contour starts at.
+	public func addRRect(_ rrect: SKRRect, _ direction: SKPathDirection, _ startIndex: UInt32) {
+		__sk_pathbuilder_add_rrect_start(handle, rrect.handle, direction, startIndex)
 	}
 }

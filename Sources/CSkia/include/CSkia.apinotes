@@ -1464,6 +1464,10 @@ Functions:
   SwiftPrivate: true
 - Name: sk_opbuilder_add
   SwiftPrivate: true
+- Name: sk_opbuilder_destroy
+  SwiftPrivate: true
+- Name: sk_opbuilder_new
+  SwiftPrivate: true
 - Name: sk_opbuilder_resolve
   SwiftPrivate: true
 - Name: sk_overdraw_canvas_new
@@ -1634,9 +1638,27 @@ Functions:
   SwiftPrivate: true
 - Name: sk_path_is_rrect
   SwiftPrivate: true
+- Name: sk_path_iter_conic_weight
+  SwiftPrivate: true
+- Name: sk_path_iter_destroy
+  SwiftPrivate: true
+- Name: sk_path_iter_is_close_line
+  SwiftPrivate: true
+- Name: sk_path_iter_is_closed_contour
+  SwiftPrivate: true
+- Name: sk_path_iter_next
+  SwiftPrivate: true
 - Name: sk_path_new
   SwiftPrivate: true
 - Name: sk_path_parse_svg_string
+  SwiftPrivate: true
+- Name: sk_path_rawiter_conic_weight
+  SwiftPrivate: true
+- Name: sk_path_rawiter_destroy
+  SwiftPrivate: true
+- Name: sk_path_rawiter_next
+  SwiftPrivate: true
+- Name: sk_path_rawiter_peek
   SwiftPrivate: true
 - Name: sk_path_reset
   SwiftPrivate: true
@@ -1728,9 +1750,23 @@ Functions:
   SwiftPrivate: true
 - Name: sk_pathbuilder_snapshot_path
   SwiftPrivate: true
+- Name: sk_pathmeasure_destroy
+  SwiftPrivate: true
+- Name: sk_pathmeasure_get_length
+  SwiftPrivate: true
+- Name: sk_pathmeasure_get_matrix
+  SwiftPrivate: true
+- Name: sk_pathmeasure_get_pos_tan
+  SwiftPrivate: true
 - Name: sk_pathmeasure_get_segment
   SwiftPrivate: true
+- Name: sk_pathmeasure_is_closed
+  SwiftPrivate: true
+- Name: sk_pathmeasure_new
+  SwiftPrivate: true
 - Name: sk_pathmeasure_new_with_path
+  SwiftPrivate: true
+- Name: sk_pathmeasure_next_contour
   SwiftPrivate: true
 - Name: sk_pathmeasure_set_path
   SwiftPrivate: true
@@ -1858,6 +1894,32 @@ Functions:
       Kind: counted_by
       BoundedBy: count
 - Name: sk_rrect_contains
+  SwiftPrivate: true
+- Name: sk_rrect_delete
+  SwiftPrivate: true
+- Name: sk_rrect_get_height
+  SwiftPrivate: true
+- Name: sk_rrect_get_radii
+  SwiftPrivate: true
+- Name: sk_rrect_get_rect
+  SwiftPrivate: true
+- Name: sk_rrect_get_type
+  SwiftPrivate: true
+- Name: sk_rrect_get_width
+  SwiftPrivate: true
+- Name: sk_rrect_inset
+  SwiftPrivate: true
+- Name: sk_rrect_is_valid
+  SwiftPrivate: true
+- Name: sk_rrect_new
+  SwiftPrivate: true
+- Name: sk_rrect_new_copy
+  SwiftPrivate: true
+- Name: sk_rrect_offset
+  SwiftPrivate: true
+- Name: sk_rrect_outset
+  SwiftPrivate: true
+- Name: sk_rrect_set_empty
   SwiftPrivate: true
 - Name: sk_rrect_set_nine_patch
   SwiftPrivate: true

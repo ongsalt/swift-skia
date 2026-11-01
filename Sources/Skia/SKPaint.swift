@@ -23,7 +23,7 @@ public final class SKPaint {
 		__sk_paint_reset(handle)
 	}
 
-	public var isAntialias: Bool {
+	public var isAntiAlias: Bool {
 		get { __sk_paint_is_antialias(handle) }
 		set { __sk_paint_set_antialias(handle, newValue) }
 	}
@@ -107,5 +107,28 @@ public final class SKPaint {
 	public var pathEffect: SKPathEffect? {
 		get { __sk_paint_get_path_effect(handle) }
 		set { __sk_paint_set_path_effect(handle, newValue) }
+	}
+
+	/// The outline this paint would fill when drawing `path` (applying stroke and path effect).
+	/// `cullRect` limits the work to an area; a `matrix` that scales up adds precision.
+	/// Nil when the result is a hairline (to be stroked, not filled).
+	public func getFillPath(_ path: SKPath, _ cullRect: SKRect? = nil, _ matrix: SKMatrix = .identity) -> SKPath? {
+		let builder = SKPathBuilder()
+		var matrix = matrix
+		let filled = _skWithOptionalPointer(cullRect) { cullRect in
+			__sk_paint_get_fill_path(handle, path.handle, builder.handle, cullRect, &matrix)
+		}
+		return filled ? builder.detach() : nil
+	}
+
+	/// Whether `computeFastBounds` can be used (false for some effects).
+	public var canComputeFastBounds: Bool { __sk_paint_can_compute_fast_bounds(handle) }
+
+	/// A conservative bound of what drawing a shape with `bounds` covers with this paint.
+	public func computeFastBounds(_ bounds: SKRect) -> SKRect {
+		var bounds = bounds
+		var result = SKRect()
+		__sk_paint_compute_fast_bounds(handle, &bounds, &result)
+		return result
 	}
 }

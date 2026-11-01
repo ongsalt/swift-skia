@@ -51,6 +51,7 @@ HAND_WRITTEN = {
     "sk_graphite_context_t", "sk_graphite_recorder_t", "sk_graphite_recording_t",
     "sk_graphite_backend_texture_t",
     "sk_pixmap_t", "sk_fontstyle_t",
+    "sk_rrect_t", "sk_pathmeasure_t", "sk_path_iterator_t", "sk_path_rawiterator_t", "sk_opbuilder_t",
 }
 
 # Base classes, not types of their own.

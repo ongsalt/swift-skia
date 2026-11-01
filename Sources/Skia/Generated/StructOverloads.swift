@@ -322,34 +322,6 @@ public func sk_region_set_rect(_ r: OpaquePointer?, _ rect: SKRectI) -> Bool {
 	withUnsafePointer(to: rect) { rect in __sk_region_set_rect(r, rect) }
 }
 
-public func sk_rrect_contains(_ rrect: OpaquePointer?, _ rect: SKRect) -> Bool {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_contains(rrect, rect) }
-}
-
-public func sk_rrect_set_nine_patch(_ rrect: OpaquePointer?, _ rect: SKRect, _ leftRad: Float, _ topRad: Float, _ rightRad: Float, _ bottomRad: Float) {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_set_nine_patch(rrect, rect, leftRad, topRad, rightRad, bottomRad) }
-}
-
-public func sk_rrect_set_oval(_ rrect: OpaquePointer?, _ rect: SKRect) {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_set_oval(rrect, rect) }
-}
-
-public func sk_rrect_set_rect(_ rrect: OpaquePointer?, _ rect: SKRect) {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_set_rect(rrect, rect) }
-}
-
-public func sk_rrect_set_rect_radii(_ rrect: OpaquePointer?, _ rect: SKRect, _ radii: UnsafePointer<sk_vector_t>?) {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_set_rect_radii(rrect, rect, radii) }
-}
-
-public func sk_rrect_set_rect_xy(_ rrect: OpaquePointer?, _ rect: SKRect, _ xRad: Float, _ yRad: Float) {
-	withUnsafePointer(to: rect) { rect in __sk_rrect_set_rect_xy(rrect, rect, xRad, yRad) }
-}
-
-public func sk_rrect_transform(_ rrect: OpaquePointer?, _ matrix: SKMatrix, _ dest: OpaquePointer?) -> Bool {
-	withUnsafePointer(to: matrix) { matrix in __sk_rrect_transform(rrect, matrix, dest) }
-}
-
 extension SKShader {
 	public static func color4f(_ color: SKColor4f, _ colorspace: SKColorSpace?) -> SKShader? {
 		withUnsafePointer(to: color) { color in __sk_shader_new_color4f(color, colorspace) }
