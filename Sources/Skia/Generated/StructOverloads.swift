@@ -7,7 +7,7 @@ func _skWithOptionalPointer<T, R>(_ value: T?, _ body: (UnsafePointer<T>?) throw
 	return try withUnsafePointer(to: value) { try body($0) }
 }
 
-public func sk_bitmap_make_shader(_ cbitmap: OpaquePointer?, _ tmx: SKShaderTileMode, _ tmy: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix?) -> SKShader? {
+public func sk_bitmap_make_shader(_ cbitmap: OpaquePointer?, _ tmx: SKShaderTileMode, _ tmy: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix? = nil) -> SKShader? {
 	var sampling = sampling
 	return _skWithOptionalPointer(cmatrix) { cmatrix in __sk_bitmap_make_shader(cbitmap, tmx, tmy, &sampling, cmatrix) }
 }
@@ -20,15 +20,15 @@ public func sk_bitmap_try_alloc_pixels_with_flags(_ cbitmap: OpaquePointer?, _ r
 	withUnsafePointer(to: requestedInfo) { requestedInfo in __sk_bitmap_try_alloc_pixels_with_flags(cbitmap, requestedInfo, flags) }
 }
 
-public func sk_codec_get_pixels(_ codec: OpaquePointer?, _ info: SKImageInfo, _ pixels: UnsafeMutableRawPointer?, _ rowBytes: Int, _ options: SKCodecOptions?) -> SKCodecResult {
+public func sk_codec_get_pixels(_ codec: OpaquePointer?, _ info: SKImageInfo, _ pixels: UnsafeMutableRawPointer?, _ rowBytes: Int, _ options: SKCodecOptions? = nil) -> SKCodecResult {
 	withUnsafePointer(to: info) { info in _skWithOptionalPointer(options) { options in __sk_codec_get_pixels(codec, info, pixels, rowBytes, options) } }
 }
 
-public func sk_codec_start_incremental_decode(_ codec: OpaquePointer?, _ info: SKImageInfo, _ pixels: UnsafeMutableRawPointer?, _ rowBytes: Int, _ options: SKCodecOptions?) -> SKCodecResult {
+public func sk_codec_start_incremental_decode(_ codec: OpaquePointer?, _ info: SKImageInfo, _ pixels: UnsafeMutableRawPointer?, _ rowBytes: Int, _ options: SKCodecOptions? = nil) -> SKCodecResult {
 	withUnsafePointer(to: info) { info in _skWithOptionalPointer(options) { options in __sk_codec_start_incremental_decode(codec, info, pixels, rowBytes, options) } }
 }
 
-public func sk_codec_start_scanline_decode(_ codec: OpaquePointer?, _ info: SKImageInfo, _ options: SKCodecOptions?) -> SKCodecResult {
+public func sk_codec_start_scanline_decode(_ codec: OpaquePointer?, _ info: SKImageInfo, _ options: SKCodecOptions? = nil) -> SKCodecResult {
 	withUnsafePointer(to: info) { info in _skWithOptionalPointer(options) { options in __sk_codec_start_scanline_decode(codec, info, options) } }
 }
 
@@ -75,13 +75,13 @@ extension SKImage {
 }
 
 extension SKImage {
-	public func makeRawShader(_ tileX: SKShaderTileMode, _ tileY: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix?) -> SKShader? {
+	public func makeRawShader(_ tileX: SKShaderTileMode, _ tileY: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: sampling) { sampling in _skWithOptionalPointer(cmatrix) { cmatrix in __sk_image_make_raw_shader(self, tileX, tileY, sampling, cmatrix) } }
 	}
 }
 
 extension SKImage {
-	public func makeShader(_ tileX: SKShaderTileMode, _ tileY: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix?) -> SKShader? {
+	public func makeShader(_ tileX: SKShaderTileMode, _ tileY: SKShaderTileMode, _ sampling: SKSamplingOptions, _ cmatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: sampling) { sampling in _skWithOptionalPointer(cmatrix) { cmatrix in __sk_image_make_shader(self, tileX, tileY, sampling, cmatrix) } }
 	}
 }
@@ -117,79 +117,79 @@ extension SKImage {
 }
 
 extension SKImageFilter {
-	public static func arithmetic(_ k1: Float, _ k2: Float, _ k3: Float, _ k4: Float, _ enforcePMColor: Bool, _ background: SKImageFilter?, _ foreground: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func arithmetic(_ k1: Float, _ k2: Float, _ k3: Float, _ k4: Float, _ enforcePMColor: Bool, _ background: SKImageFilter? = nil, _ foreground: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_arithmetic(k1, k2, k3, k4, enforcePMColor, background, foreground, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func blend(_ mode: SKBlendMode, _ background: SKImageFilter?, _ foreground: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func blend(_ mode: SKBlendMode, _ background: SKImageFilter? = nil, _ foreground: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_blend(mode, background, foreground, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func blender(_ blender: SKBlender?, _ background: SKImageFilter?, _ foreground: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func blender(_ blender: SKBlender? = nil, _ background: SKImageFilter? = nil, _ foreground: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_blender(blender, background, foreground, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func blur(_ sigmaX: Float, _ sigmaY: Float, _ tileMode: SKShaderTileMode, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func blur(_ sigmaX: Float, _ sigmaY: Float, _ tileMode: SKShaderTileMode, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_blur(sigmaX, sigmaY, tileMode, input, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func colorFilter(_ cf: SKColorFilter?, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func colorFilter(_ cf: SKColorFilter? = nil, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_color_filter(cf, input, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func crop(_ rect: SKRect, _ tileMode: SKShaderTileMode, _ input: SKImageFilter?) -> SKImageFilter? {
+	public static func crop(_ rect: SKRect, _ tileMode: SKShaderTileMode, _ input: SKImageFilter? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: rect) { rect in __sk_imagefilter_new_crop(rect, tileMode, input) }
 	}
 }
 
 extension SKImageFilter {
-	public static func dilate(_ radiusX: Float, _ radiusY: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func dilate(_ radiusX: Float, _ radiusY: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_dilate(radiusX, radiusY, input, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func displacementMapEffect(_ xChannelSelector: SKColorChannel, _ yChannelSelector: SKColorChannel, _ scale: Float, _ displacement: SKImageFilter?, _ color: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func displacementMapEffect(_ xChannelSelector: SKColorChannel, _ yChannelSelector: SKColorChannel, _ scale: Float, _ displacement: SKImageFilter? = nil, _ color: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_displacement_map_effect(xChannelSelector, yChannelSelector, scale, displacement, color, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func distantLitDiffuse(_ direction: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func distantLitDiffuse(_ direction: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: direction) { direction in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_distant_lit_diffuse(direction, lightColor, surfaceScale, kd, input, cropRect) } }
 	}
 }
 
 extension SKImageFilter {
-	public static func distantLitSpecular(_ direction: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func distantLitSpecular(_ direction: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: direction) { direction in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_distant_lit_specular(direction, lightColor, surfaceScale, ks, shininess, input, cropRect) } }
 	}
 }
 
 extension SKImageFilter {
-	public static func dropShadow(_ dx: Float, _ dy: Float, _ sigmaX: Float, _ sigmaY: Float, _ color: sk_color_t, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func dropShadow(_ dx: Float, _ dy: Float, _ sigmaX: Float, _ sigmaY: Float, _ color: sk_color_t, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_drop_shadow(dx, dy, sigmaX, sigmaY, color, input, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func dropShadowOnly(_ dx: Float, _ dy: Float, _ sigmaX: Float, _ sigmaY: Float, _ color: sk_color_t, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func dropShadowOnly(_ dx: Float, _ dy: Float, _ sigmaX: Float, _ sigmaY: Float, _ color: sk_color_t, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_drop_shadow_only(dx, dy, sigmaX, sigmaY, color, input, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func erode(_ radiusX: Float, _ radiusY: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func erode(_ radiusX: Float, _ radiusY: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_erode(radiusX, radiusY, input, cropRect) }
 	}
 }
@@ -207,31 +207,31 @@ extension SKImageFilter {
 }
 
 extension SKImageFilter {
-	public static func magnifier(_ lensBounds: SKRect, _ zoomAmount: Float, _ inset: Float, _ sampling: SKSamplingOptions, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func magnifier(_ lensBounds: SKRect, _ zoomAmount: Float, _ inset: Float, _ sampling: SKSamplingOptions, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: lensBounds) { lensBounds in withUnsafePointer(to: sampling) { sampling in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_magnifier(lensBounds, zoomAmount, inset, sampling, input, cropRect) } } }
 	}
 }
 
 extension SKImageFilter {
-	public static func matrixConvolution(_ kernelSize: SKSizeI, _ kernel: UnsafePointer<Float>?, _ gain: Float, _ bias: Float, _ kernelOffset: SKPointI, _ ctileMode: SKShaderTileMode, _ convolveAlpha: Bool, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func matrixConvolution(_ kernelSize: SKSizeI, _ kernel: UnsafePointer<Float>?, _ gain: Float, _ bias: Float, _ kernelOffset: SKPointI, _ ctileMode: SKShaderTileMode, _ convolveAlpha: Bool, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: kernelSize) { kernelSize in withUnsafePointer(to: kernelOffset) { kernelOffset in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_matrix_convolution(kernelSize, kernel, gain, bias, kernelOffset, ctileMode, convolveAlpha, input, cropRect) } } }
 	}
 }
 
 extension SKImageFilter {
-	public static func matrixTransform(_ cmatrix: SKMatrix, _ sampling: SKSamplingOptions, _ input: SKImageFilter?) -> SKImageFilter? {
+	public static func matrixTransform(_ cmatrix: SKMatrix, _ sampling: SKSamplingOptions, _ input: SKImageFilter? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: cmatrix) { cmatrix in withUnsafePointer(to: sampling) { sampling in __sk_imagefilter_new_matrix_transform(cmatrix, sampling, input) } }
 	}
 }
 
 extension SKImageFilter {
-	public func newMergeSimple(_ second: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public func newMergeSimple(_ second: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_merge_simple(self, second, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func offset(_ dx: Float, _ dy: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func offset(_ dx: Float, _ dy: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_offset(dx, dy, input, cropRect) }
 	}
 }
@@ -243,37 +243,37 @@ extension SKImageFilter {
 }
 
 extension SKImageFilter {
-	public static func pointLitDiffuse(_ location: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func pointLitDiffuse(_ location: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: location) { location in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_point_lit_diffuse(location, lightColor, surfaceScale, kd, input, cropRect) } }
 	}
 }
 
 extension SKImageFilter {
-	public static func pointLitSpecular(_ location: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func pointLitSpecular(_ location: SKPoint3, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: location) { location in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_point_lit_specular(location, lightColor, surfaceScale, ks, shininess, input, cropRect) } }
 	}
 }
 
 extension SKImageFilter {
-	public static func shader(_ shader: SKShader?, _ dither: Bool, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func shader(_ shader: SKShader?, _ dither: Bool, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		_skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_shader(shader, dither, cropRect) }
 	}
 }
 
 extension SKImageFilter {
-	public static func spotLitDiffuse(_ location: SKPoint3, _ target: SKPoint3, _ specularExponent: Float, _ cutoffAngle: Float, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func spotLitDiffuse(_ location: SKPoint3, _ target: SKPoint3, _ specularExponent: Float, _ cutoffAngle: Float, _ lightColor: sk_color_t, _ surfaceScale: Float, _ kd: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: location) { location in withUnsafePointer(to: target) { target in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_spot_lit_diffuse(location, target, specularExponent, cutoffAngle, lightColor, surfaceScale, kd, input, cropRect) } } }
 	}
 }
 
 extension SKImageFilter {
-	public static func spotLitSpecular(_ location: SKPoint3, _ target: SKPoint3, _ specularExponent: Float, _ cutoffAngle: Float, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter?, _ cropRect: SKRect?) -> SKImageFilter? {
+	public static func spotLitSpecular(_ location: SKPoint3, _ target: SKPoint3, _ specularExponent: Float, _ cutoffAngle: Float, _ lightColor: sk_color_t, _ surfaceScale: Float, _ ks: Float, _ shininess: Float, _ input: SKImageFilter? = nil, _ cropRect: SKRect? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: location) { location in withUnsafePointer(to: target) { target in _skWithOptionalPointer(cropRect) { cropRect in __sk_imagefilter_new_spot_lit_specular(location, target, specularExponent, cutoffAngle, lightColor, surfaceScale, ks, shininess, input, cropRect) } } }
 	}
 }
 
 extension SKImageFilter {
-	public static func tile(_ src: SKRect, _ dst: SKRect, _ input: SKImageFilter?) -> SKImageFilter? {
+	public static func tile(_ src: SKRect, _ dst: SKRect, _ input: SKImageFilter? = nil) -> SKImageFilter? {
 		withUnsafePointer(to: src) { src in withUnsafePointer(to: dst) { dst in __sk_imagefilter_new_tile(src, dst, input) } }
 	}
 }
@@ -289,7 +289,7 @@ extension SKPathEffect {
 }
 
 extension SKPicture {
-	public func makeShader(_ tmx: SKShaderTileMode, _ tmy: SKShaderTileMode, _ mode: SKFilterMode, _ localMatrix: SKMatrix?, _ tile: SKRect?) -> SKShader? {
+	public func makeShader(_ tmx: SKShaderTileMode, _ tmy: SKShaderTileMode, _ mode: SKFilterMode, _ localMatrix: SKMatrix? = nil, _ tile: SKRect? = nil) -> SKShader? {
 		_skWithOptionalPointer(localMatrix) { localMatrix in _skWithOptionalPointer(tile) { tile in __sk_picture_make_shader(self, tmx, tmy, mode, localMatrix, tile) } }
 	}
 }
@@ -323,67 +323,67 @@ public func sk_region_set_rect(_ r: OpaquePointer?, _ rect: SKRectI) -> Bool {
 }
 
 extension SKShader {
-	public static func color4f(_ color: SKColor4f, _ colorspace: SKColorSpace?) -> SKShader? {
+	public static func color4f(_ color: SKColor4f, _ colorspace: SKColorSpace? = nil) -> SKShader? {
 		withUnsafePointer(to: color) { color in __sk_shader_new_color4f(color, colorspace) }
 	}
 }
 
 extension SKShader {
-	public static func linearGradient(_ points: UnsafePointer<SKPoint>?, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func linearGradient(_ points: UnsafePointer<SKPoint>?, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		_skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_linear_gradient(points, colors, colorPos, tileMode, localMatrix) }
 	}
 }
 
 extension SKShader {
-	public static func linearGradientColor4f(_ points: UnsafePointer<SKPoint>?, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func linearGradientColor4f(_ points: UnsafePointer<SKPoint>?, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		_skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_linear_gradient_color4f(points, colors, colorspace, colorPos, tileMode, localMatrix) }
 	}
 }
 
 extension SKShader {
-	public static func perlinNoiseFractalNoise(_ baseFrequencyX: Float, _ baseFrequencyY: Float, _ numOctaves: Int32, _ seed: Float, _ tileSize: SKSizeI?) -> SKShader? {
+	public static func perlinNoiseFractalNoise(_ baseFrequencyX: Float, _ baseFrequencyY: Float, _ numOctaves: Int32, _ seed: Float, _ tileSize: SKSizeI? = nil) -> SKShader? {
 		_skWithOptionalPointer(tileSize) { tileSize in __sk_shader_new_perlin_noise_fractal_noise(baseFrequencyX, baseFrequencyY, numOctaves, seed, tileSize) }
 	}
 }
 
 extension SKShader {
-	public static func perlinNoiseTurbulence(_ baseFrequencyX: Float, _ baseFrequencyY: Float, _ numOctaves: Int32, _ seed: Float, _ tileSize: SKSizeI?) -> SKShader? {
+	public static func perlinNoiseTurbulence(_ baseFrequencyX: Float, _ baseFrequencyY: Float, _ numOctaves: Int32, _ seed: Float, _ tileSize: SKSizeI? = nil) -> SKShader? {
 		_skWithOptionalPointer(tileSize) { tileSize in __sk_shader_new_perlin_noise_turbulence(baseFrequencyX, baseFrequencyY, numOctaves, seed, tileSize) }
 	}
 }
 
 extension SKShader {
-	public static func radialGradient(_ center: SKPoint, _ radius: Float, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func radialGradient(_ center: SKPoint, _ radius: Float, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: center) { center in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_radial_gradient(center, radius, colors, colorPos, tileMode, localMatrix) } }
 	}
 }
 
 extension SKShader {
-	public static func radialGradientColor4f(_ center: SKPoint, _ radius: Float, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func radialGradientColor4f(_ center: SKPoint, _ radius: Float, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: center) { center in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_radial_gradient_color4f(center, radius, colors, colorspace, colorPos, tileMode, localMatrix) } }
 	}
 }
 
 extension SKShader {
-	public static func sweepGradient(_ center: SKPoint, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ startAngle: Float, _ endAngle: Float, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func sweepGradient(_ center: SKPoint, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ startAngle: Float, _ endAngle: Float, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: center) { center in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_sweep_gradient(center, colors, colorPos, tileMode, startAngle, endAngle, localMatrix) } }
 	}
 }
 
 extension SKShader {
-	public static func sweepGradientColor4f(_ center: SKPoint, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ startAngle: Float, _ endAngle: Float, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func sweepGradientColor4f(_ center: SKPoint, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ startAngle: Float, _ endAngle: Float, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: center) { center in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_sweep_gradient_color4f(center, colors, colorspace, colorPos, tileMode, startAngle, endAngle, localMatrix) } }
 	}
 }
 
 extension SKShader {
-	public static func twoPointConicalGradient(_ start: SKPoint, _ startRadius: Float, _ end: SKPoint, _ endRadius: Float, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func twoPointConicalGradient(_ start: SKPoint, _ startRadius: Float, _ end: SKPoint, _ endRadius: Float, _ colors: Span<sk_color_t>, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: start) { start in withUnsafePointer(to: end) { end in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_two_point_conical_gradient(start, startRadius, end, endRadius, colors, colorPos, tileMode, localMatrix) } } }
 	}
 }
 
 extension SKShader {
-	public static func twoPointConicalGradientColor4f(_ start: SKPoint, _ startRadius: Float, _ end: SKPoint, _ endRadius: Float, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix?) -> SKShader? {
+	public static func twoPointConicalGradientColor4f(_ start: SKPoint, _ startRadius: Float, _ end: SKPoint, _ endRadius: Float, _ colors: Span<SKColor4f>, _ colorspace: SKColorSpace?, _ colorPos: Span<Float>?, _ tileMode: SKShaderTileMode, _ localMatrix: SKMatrix? = nil) -> SKShader? {
 		withUnsafePointer(to: start) { start in withUnsafePointer(to: end) { end in _skWithOptionalPointer(localMatrix) { localMatrix in __sk_shader_new_two_point_conical_gradient_color4f(start, startRadius, end, endRadius, colors, colorspace, colorPos, tileMode, localMatrix) } } }
 	}
 }

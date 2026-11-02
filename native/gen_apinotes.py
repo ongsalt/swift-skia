@@ -52,7 +52,11 @@ HAND_WRITTEN = {
     "sk_graphite_backend_texture_t",
     "sk_pixmap_t", "sk_fontstyle_t",
     "sk_rrect_t", "sk_pathmeasure_t", "sk_path_iterator_t", "sk_path_rawiterator_t", "sk_opbuilder_t",
+    "sk_picture_recorder_t", "sk_rtree_factory_t", "sk_bbh_factory_t",
 }
+
+# Bit flags SkiaSharp's C# doesn't mark [Flags].
+FLAG_ENUMS = {"sk_canvas_savelayerrec_flags_t"}
 
 # Base classes, not types of their own.
 NOT_REFCOUNTED = {"sk_refcnt_t", "sk_nvrefcnt_t"}
@@ -322,7 +326,7 @@ def generate(headers: pathlib.Path, generated_cs: pathlib.Path, shims: pathlib.P
         tag = {"Name": t, "SwiftName": swift}
         if kind == "enum":
             tag["EnumExtensibility"] = "open"
-            if cs and cs[1]:
+            if (cs and cs[1]) or t in FLAG_ENUMS:
                 tag["FlagEnum"] = "true"
         # Tag too, not just the typedef: `typedef struct sk_x_t {…} sk_x_t` imports by tag name.
         tags.append(tag)

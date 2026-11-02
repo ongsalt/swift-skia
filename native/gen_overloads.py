@@ -4,7 +4,8 @@ SkiaSharp's C API passes structs by pointer (`const sk_rect_t* rect`), so Swift 
 write `&rect` and couldn't express "no matrix" except with a raw nil pointer. For each public
 function with such parameters, this emits an overload taking `SKRect` (required) or `SKRect?`
 (optional) and marks the C function SwiftPrivate, as rust-skia does by hand from the C++
-signatures (`const SkRect&` is required, `const SkMatrix*` is optional).
+signatures (`const SkRect&` is required, `const SkMatrix*` is optional). Trailing optional
+structs and objects default to nil, like C++'s `= nullptr` / `= {}` defaults.
 
 Whether a pointer may be null is read from SkiaSharp's C shims (mono/skia src/c), which call
 C++ exactly that way:
@@ -151,6 +152,7 @@ class Planner:
             method = rest.split("(", 1)[0]
             is_instance = "(self:" in rest
         decl, args, wraps, prelude, has_struct = [], [], [], [], False
+        defaultable = []  # per decl entry: an optional struct or object that may default to nil
         for i, (pname, ptype) in enumerate(params):
             shim_name = def_names[i] if i < len(def_names) else ""
             label = swift_ident(pname or shim_name or f"p{i}")
@@ -168,6 +170,7 @@ class Planner:
                 if "None" in elem:
                     return None
                 decl.append(f"_ {label}: {elem}{'?' if nullable else ''}")
+                defaultable.append(False)
                 args.append(label)
                 continue
             pointee = re.sub(r"\bconst\b|\*", "", ptype).strip() if ptype.count("*") == 1 else None
@@ -180,27 +183,32 @@ class Planner:
                     kind = {"required": "inout", "input": "copy"}.get(kind, "raw")
                 if kind == "copy":  # non-const C parameter, but only read: copy so the caller passes a value
                     decl.append(f"_ {label}: {swift}")
+                    defaultable.append(False)
                     prelude.append(f"var {label} = {label}")
                     args.append(f"&{label}")
                     continue
                 if kind in ("required", "optional"):
                     has_struct = True
                     decl.append(f"_ {label}: {swift}{'?' if kind == 'optional' else ''}")
+                    defaultable.append(kind == "optional")
                     wraps.append((label, kind))
                     args.append(label)
                     continue
                 if kind == "inout":
                     decl.append(f"_ {label}: inout {swift}")
+                    defaultable.append(False)
                     args.append(f"&{label}")
                     continue
                 pointer = f"UnsafePointer<{swift}>?" if ptype.startswith("const ") else f"UnsafeMutablePointer<{swift}>?"
                 decl.append(f"_ {label}: {pointer}")
+                defaultable.append(False)
                 args.append(label)
                 continue
             swift = self.value_type(ptype) if "*" not in ptype else self.pointer_type(ptype)
             if swift is None:
                 return None
             decl.append(f"_ {label}: {swift}")
+            defaultable.append(swift.endswith("?") and swift[:-1] in self.class_names.values())
             args.append(label)
         if not has_struct:
             return None
@@ -208,6 +216,10 @@ class Planner:
         if ret is None:
             return None
 
+        for i in reversed(range(len(decl))):
+            if not defaultable[i]:
+                break
+            decl[i] += " = nil"
         call = f"__{name}({', '.join(args)})"
         for label, kind in reversed(wraps):
             helper = "withUnsafePointer(to: " if kind == "required" else "_skWithOptionalPointer("

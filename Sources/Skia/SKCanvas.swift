@@ -6,7 +6,7 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	public let handle: OpaquePointer
 
 	@_lifetime(&owner)
-	init<Owner: AnyObject>(_ handle: OpaquePointer, dependingOn owner: inout Owner) {
+	init<Owner: ~Copyable>(_ handle: OpaquePointer, dependingOn owner: inout Owner) {
 		self.handle = handle
 	}
 
@@ -21,6 +21,37 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 	public func saveLayer(_ bounds: SKRect? = nil, _ paint: SKPaint? = nil) -> Int32 {
 		guard var bounds else { return __sk_canvas_save_layer(handle, nil, paint?.handle) }
 		return __sk_canvas_save_layer(handle, &bounds, paint?.handle)
+	}
+
+	/// `SkCanvas::SaveLayerRec`.
+	public struct SaveLayerRec {
+		/// Nil: unbounded (the clip).
+		public var bounds: SKRect?
+		/// Applied when the layer is restored: its alpha, blend mode, color and image filter.
+		public var paint: SKPaint?
+		/// Filters what's already drawn below the layer into the layer's initial contents.
+		public var backdrop: SKImageFilter?
+		public var saveLayerFlags: SKCanvasSaveLayerRecFlags
+
+		public init(
+			bounds: SKRect? = nil, paint: SKPaint? = nil, backdrop: SKImageFilter? = nil,
+			saveLayerFlags: SKCanvasSaveLayerRecFlags = []
+		) {
+			self.bounds = bounds
+			self.paint = paint
+			self.backdrop = backdrop
+			self.saveLayerFlags = saveLayerFlags
+		}
+	}
+
+	@discardableResult
+	public func saveLayer(_ rec: SaveLayerRec) -> Int32 {
+		_skWithOptionalPointer(rec.bounds) { bounds in
+			var crec = SKCanvasSaveLayerRec(
+				fBounds: UnsafeMutablePointer(mutating: bounds), fPaint: rec.paint?.handle,
+				fBackdrop: rec.backdrop, fFlags: rec.saveLayerFlags)
+			return __sk_canvas_save_layer_rec(handle, &crec)
+		}
 	}
 
 	public func restore() {

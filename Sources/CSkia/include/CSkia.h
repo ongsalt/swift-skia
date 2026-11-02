@@ -39,6 +39,7 @@
 // Our additions over Skia's C++ API (Sources/CSkia/*.cpp).
 #include "swsk_graphite.h"
 #include "swsk_graphite_vulkan.h"
+#include "swsk_runtimeeffect.h"
 
 // Retain functions for SkRefCnt types the C API only exposes X_unref for
 // (SkiaSharp retains these through sk_refcnt_safe_ref the same way).

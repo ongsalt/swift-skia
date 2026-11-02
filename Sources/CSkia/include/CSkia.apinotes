@@ -108,6 +108,7 @@ Tags:
 - Name: sk_canvas_savelayerrec_flags_t
   SwiftName: SKCanvasSaveLayerRecFlags
   EnumExtensibility: open
+  FlagEnum: true
 - Name: sk_canvas_savelayerrec_t
   SwiftName: SKCanvasSaveLayerRec
 - Name: sk_clipop_t
@@ -1812,10 +1813,16 @@ Functions:
   SwiftPrivate: true
 - Name: sk_picture_recorder_begin_recording_with_bbh_factory
   SwiftPrivate: true
+- Name: sk_picture_recorder_delete
+  SwiftPrivate: true
 - Name: sk_picture_recorder_end_recording
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
 - Name: sk_picture_recorder_end_recording_as_drawable
   SwiftReturnOwnership: retained
+  SwiftPrivate: true
+- Name: sk_picture_recorder_new
+  SwiftPrivate: true
 - Name: sk_picture_ref
   Availability: nonswift
 - Name: sk_picture_serialize_to_data
@@ -1932,6 +1939,10 @@ Functions:
 - Name: sk_rrect_set_rect_xy
   SwiftPrivate: true
 - Name: sk_rrect_transform
+  SwiftPrivate: true
+- Name: sk_rtree_factory_delete
+  SwiftPrivate: true
+- Name: sk_rtree_factory_new
   SwiftPrivate: true
 - Name: sk_runtimeeffect_get_child_from_index
   SwiftName: SKRuntimeEffect.getChildFromIndex(self:_:_:)
