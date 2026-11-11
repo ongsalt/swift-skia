@@ -1,4 +1,22 @@
-# Editor setup
+# swift-skia
+Skia bindings for swift.
+
+# Installation
+```swift
+.package(url: "https://github.com/ongsalt/swift-skia", branch: "main"),
+```
+
+```swift
+.product(name: "Skia", package: "swift-skia"),
+```
+
+# Supported platform
+- windows: x86_64
+- linux: x86_64
+
+# Development
+
+## Editor setup
 
 If SourceKit-LSP reports `No such module 'Skia'`, switch it to Swift Build by adding
 `.sourcekit-lsp/config.json` (or `~/.sourcekit-lsp/config.json`) and restarting the language server:
@@ -10,7 +28,7 @@ If SourceKit-LSP reports `No such module 'Skia'`, switch it to Swift Build by ad
 The default native build system can't index modules that depend on static-library artifact bundles.
 
 # Acknowledgement
-- `SkiaSharp` for c binding and skia build
+- `SkiaSharp` for c binding
 - `skia-safe` for ownership model
 - adobe `swan` for packaging
-- `SkiaKit`
+- `SkiaKit` for some api naming
