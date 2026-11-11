@@ -38,6 +38,9 @@ let package = Package(
 				.linkedLibrary("m", .when(platforms: [.linux])),
 				.linkedLibrary("dl", .when(platforms: [.linux])),
 				.linkedLibrary("pthread", .when(platforms: [.linux])),
+				// Skia's Android logging and AHardwareBuffer support. libc++ comes from the SDK.
+				.linkedLibrary("log", .when(platforms: [.android])),
+				.linkedLibrary("android", .when(platforms: [.android])),
 				// Skia's GN targets list these for Windows (native/build.py).
 				.linkedLibrary("Ole32", .when(platforms: [.windows])),
 				.linkedLibrary("OleAut32", .when(platforms: [.windows])),

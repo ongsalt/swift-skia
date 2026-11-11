@@ -47,7 +47,8 @@ def members(path: pathlib.Path):
         yield name, body
 
 
-def merge(out: pathlib.Path, inputs: list[pathlib.Path], exclude: set[str]) -> None:
+def merge(out: pathlib.Path, inputs: list[pathlib.Path], exclude: set[str], ar: str = "ar") -> None:
+    """`ar` writes non-.lib archives; it must understand the objects' architecture to index them."""
     seen: set[str] = set()
     with tempfile.TemporaryDirectory() as tmp:
         files = []
@@ -70,7 +71,7 @@ def merge(out: pathlib.Path, inputs: list[pathlib.Path], exclude: set[str]) -> N
         if out.suffix == ".lib":
             cmd = ["llvm-lib", "/nologo", f"/out:{out.resolve()}", f"@{rsp.name}"]
         else:
-            cmd = ["ar", "rcs", out.resolve(), f"@{rsp.name}"]
+            cmd = [ar, "rcs", out.resolve(), f"@{rsp.name}"]
         subprocess.run(cmd, cwd=tmp, check=True)
     print(f"{out}: {len(files)} objects from {len(inputs)} archives")
 

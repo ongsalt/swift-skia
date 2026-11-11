@@ -39,6 +39,17 @@ jobs:
             container: ""
             target: windows
             arch: x86_64
+          # On the host: the runner image ships the Android NDK.
+          - platform: ubuntu-24.04
+            container: ""
+            target: android
+            arch: arm64
+            ndk_target: aarch64-linux-android28 # build.py's ANDROID_API
+          - platform: ubuntu-24.04
+            container: ""
+            target: android
+            arch: x86_64
+            ndk_target: x86_64-linux-android28
 
     runs-on: ${{ matrix.platform }}
     container: ${{ matrix.container }}
@@ -49,11 +60,18 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install prerequisites on Linux
-        if: runner.os == 'Linux'
+        if: matrix.target == 'linux'
         run: |
           apt-get update
           apt-get install -y --no-install-recommends git python3 ninja-build curl ca-certificates libstdc++-12-dev
           git config --global --add safe.directory '*'
+
+      - name: Install prerequisites for Android
+        if: matrix.target == 'android'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
 
       - name: Set up Python on Windows
         if: runner.os == 'Windows'
@@ -107,6 +125,26 @@ jobs:
               -Wl,--whole-archive builds/${{ matrix.target }}-${{ matrix.arch }}/libSkiaSharp.a -Wl,--no-whole-archive \
               -lstdc++ -lm -lpthread -ldl -Wl,--no-undefined > link.log 2>&1; then
             grep -o "undefined reference to .*" link.log | sort -u | head -100 || cat link.log
+            exit 1
+          fi
+
+      # Link only: the runner can't execute Android binaries.
+      - name: Link smoke tests and every object in the archive for Android
+        if: matrix.target == 'android'
+        run: |
+          stage=builds/${{ matrix.target }}-${{ matrix.arch }}
+          bin=$(echo "$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin)
+          libs="-lSkiaSharp -llog -landroid -lm -ldl"
+          # C, linked by clang++ for libc++.
+          "$bin/clang" --target=${{ matrix.ndk_target }} -std=c11 -O1 -c native/smoke.c \
+            -I"$stage/headers" -o smoke.o
+          "$bin/clang++" --target=${{ matrix.ndk_target }} smoke.o -L"$stage" $libs -o smoke
+          "$bin/clang++" --target=${{ matrix.ndk_target }} -std=c++20 -O1 native/smoke_cpp.cpp \
+            -I"$stage/headers" -L"$stage" $libs -o smoke_cpp
+          if ! "$bin/clang++" --target=${{ matrix.ndk_target }} -shared -o whole.so \
+              -Wl,--whole-archive "$stage/libSkiaSharp.a" -Wl,--no-whole-archive \
+              -llog -landroid -lm -ldl -Wl,--no-undefined > link.log 2>&1; then
+            grep -o "undefined symbol: .*" link.log | sort -u | head -100 || cat link.log
             exit 1
           fi
 

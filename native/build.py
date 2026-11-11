@@ -7,10 +7,12 @@ env:
   SKIA_SRC   checkout directory         (default: ./skia-src)
   BUILDS     staging root               (default: ./builds)
   CLANG_WIN  LLVM install, Windows only (default: C:/Program Files/LLVM)
+  ANDROID_NDK_HOME  Android NDK, Android only
 output: $BUILDS/<target>-<arch>/{libSkiaSharp.a or SkiaSharp.lib, headers/skia/, manifest.json}
 
 Needs git, ninja and clang on PATH. On Windows also Visual Studio (C++ tools +
 Windows SDK), which GN finds itself, and a `python3` on PATH for GN's scripts.
+Android uses the NDK's clang instead.
 """
 import json
 import os
@@ -31,8 +33,21 @@ TRIPLES = {
     "linux-arm64": "aarch64-unknown-linux-gnu",
     "windows-x86_64": "x86_64-unknown-windows-msvc",
     "windows-arm64": "aarch64-unknown-windows-msvc",
+    # No API level: SwiftPM matches these against the SDK's aarch64-unknown-linux-android28 etc.
+    "android-arm64": "aarch64-unknown-linux-android",
+    "android-x86_64": "x86_64-unknown-linux-android",
 }
 CPUS = {"x86_64": "x64", "arm64": "arm64"}
+
+# The Swift SDK for Android's minimum, and the swift-android-examples default.
+ANDROID_API = 28
+
+
+def android_ndk() -> pathlib.Path:
+    ndk = os.environ.get("ANDROID_NDK_HOME")
+    if not ndk:
+        sys.exit("ANDROID_NDK_HOME must point at an Android NDK")
+    return pathlib.Path(ndk)
 
 
 def target_config(target: str) -> tuple[str, str, list[str]]:
@@ -63,6 +78,17 @@ def target_config(target: str) -> tuple[str, str, list[str]]:
             "skia_enable_fontmgr_win=true",
             "skia_enable_fontmgr_win_gdi=false",
             'extra_cflags=["/MD", "-DSK_C_API="]',
+        ]
+    if target == "android":
+        # SkiaSharp's native/android build.cake, at the Swift SDK's API level. The NDK's
+        # libc++ is also what Swift on Android links. Fonts: SkFontMgr_android, which reads
+        # /system/etc/fonts.xml with the bundled expat.
+        return "libSkiaSharp.a", "o", [
+            'target_os="android"',
+            f'ndk="{android_ndk().as_posix()}"',
+            f"ndk_api={ANDROID_API}",
+            'extra_cflags=["-ffunction-sections", "-fdata-sections", '
+            '"-DHAVE_SYSCALL_GETRANDOM", "-DXML_DEV_URANDOM"]',
         ]
     sys.exit(f"unsupported target: {target}")
 
@@ -195,11 +221,14 @@ def main() -> None:
     #                  (Its object is prefixed "libSkiaSharp." on Linux,
     #                  "SkiaSharp." on Windows.)
     archives = sorted(out.glob(f"*{pathlib.Path(lib).suffix}"))
+    ar = "ar"
+    if target == "android":
+        ar = str(next(android_ndk().glob("toolchains/llvm/prebuilt/*/bin/llvm-ar")))
     merge_archives.merge(stage / lib, archives, exclude={
         f"core.gr_context.{obj}",
         f"libSkiaSharp.SkiaKeeper.{obj}",
         f"SkiaSharp.SkiaKeeper.{obj}",
-    })
+    }, ar=ar)
 
     # Public headers (the C API and the C++ API) under a skia/ namespace, with SkUserConfig.h
     # carrying the defines the library was built with.
