@@ -18,6 +18,7 @@
 #include "skia/include/c/sk_imagefilter.h"
 #include "skia/include/c/sk_maskfilter.h"
 #include "skia/include/c/sk_matrix.h"
+#include "skia/include/c/sk_mesh.h"
 #include "skia/include/c/sk_paint.h"
 #include "skia/include/c/sk_path.h"
 #include "skia/include/c/sk_pathbuilder.h"
