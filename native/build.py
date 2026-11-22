@@ -33,14 +33,14 @@ TRIPLES = {
     "linux-arm64": "aarch64-unknown-linux-gnu",
     "windows-x86_64": "x86_64-unknown-windows-msvc",
     "windows-arm64": "aarch64-unknown-windows-msvc",
-    # No API level: SwiftPM matches these against the SDK's aarch64-unknown-linux-android28 etc.
+    # No API level: SwiftPM matches these against the SDK's aarch64-unknown-linux-android23 etc.
     "android-arm64": "aarch64-unknown-linux-android",
     "android-x86_64": "x86_64-unknown-linux-android",
 }
 CPUS = {"x86_64": "x64", "arm64": "arm64"}
 
-# The Swift SDK for Android's minimum, and the swift-android-examples default.
-ANDROID_API = 28
+# The Swift 6.4 SDK for Android's minimum.
+ANDROID_API = 23
 
 
 def android_ndk() -> pathlib.Path:
