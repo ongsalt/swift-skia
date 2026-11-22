@@ -6,7 +6,7 @@ usage: native/build.py <target> <arch>       e.g. native/build.py linux x86_64
 env:
   SKIA_SRC   checkout directory         (default: ./skia-src)
   BUILDS     staging root               (default: ./builds)
-  CLANG_WIN  LLVM install, Windows only (default: C:/Program Files/LLVM)
+  CLANG_WIN  LLVM install, Windows only (default: C:/Program Files/LLVM; CI uses Visual Studio's)
   ANDROID_NDK_HOME  Android NDK, Android only
 output: $BUILDS/<target>-<arch>/{libSkiaSharp.a or SkiaSharp.lib, headers/skia/, manifest.json}
 

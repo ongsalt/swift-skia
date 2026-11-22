@@ -79,7 +79,7 @@ jobs:
         with:
           python-version: "3.13"
 
-      # The image ships Visual Studio (MSVC + Windows SDK, found by GN) and LLVM.
+      # The image ships Visual Studio (MSVC + Windows SDK, found by GN).
       - name: Install prerequisites on Windows
         if: runner.os == 'Windows'
         run: |
@@ -87,7 +87,13 @@ jobs:
           py=$(dirname "$(command -v python)")
           [ -e "$py/python3.exe" ] || cp "$py/python.exe" "$py/python3.exe"
           python -m pip install ninja
-          echo "C:/Program Files/LLVM/bin" >> "$GITHUB_PATH"
+          # Visual Studio's own clang-cl: its STL rejects older clangs (STL1000), like the image's
+          # standalone C:/Program Files/LLVM.
+          vs=$(cygpath -m "$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath)")
+          llvm="$vs/VC/Tools/Llvm/x64"
+          "$llvm/bin/clang-cl.exe" --version
+          echo "CLANG_WIN=$llvm" >> "$GITHUB_ENV"
+          echo "$llvm/bin" >> "$GITHUB_PATH"
           git config --global core.longpaths true
 
       - name: Version
