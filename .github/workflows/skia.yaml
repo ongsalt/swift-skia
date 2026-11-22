@@ -31,14 +31,18 @@ jobs:
             container: swift:6.4-jammy
             target: linux
             arch: x86_64
-          # - platform: ubuntu-24.04-arm
-          #   container: swift:6.4-jammy
-          #   target: linux
-          #   arch: arm64
+          - platform: ubuntu-24.04-arm
+            container: swift:6.4-jammy
+            target: linux
+            arch: arm64
           - platform: windows-2025
             container: ""
             target: windows
             arch: x86_64
+          - platform: windows-11-arm
+            container: ""
+            target: windows
+            arch: arm64
           # On the host: the runner image ships the Android NDK.
           - platform: ubuntu-24.04
             container: ""
@@ -89,8 +93,12 @@ jobs:
           python -m pip install ninja
           # Visual Studio's own clang-cl: its STL rejects older clangs (STL1000), like the image's
           # standalone C:/Program Files/LLVM.
+          # Its ARM64 build where it ships one, so Arm runners don't run clang under emulation.
           vs=$(cygpath -m "$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath)")
           llvm="$vs/VC/Tools/Llvm/x64"
+          if [ "$RUNNER_ARCH" = ARM64 ] && [ -e "$vs/VC/Tools/Llvm/ARM64/bin/clang-cl.exe" ]; then
+            llvm="$vs/VC/Tools/Llvm/ARM64"
+          fi
           "$llvm/bin/clang-cl.exe" --version
           echo "CLANG_WIN=$llvm" >> "$GITHUB_ENV"
           echo "$llvm/bin" >> "$GITHUB_PATH"
@@ -106,7 +114,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: skia-src
-          key: skia-src-${{ runner.os }}-${{ hashFiles('native/skia.pin') }}
+          # Per arch too: the checkout holds the host's gn binary.
+          key: skia-src-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('native/skia.pin') }}
 
       - name: Build Skia for ${{ matrix.target }} (${{ matrix.arch }})
         run: python3 native/build.py ${{ matrix.target }} ${{ matrix.arch }}

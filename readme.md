@@ -11,8 +11,8 @@ Skia bindings for swift.
 ```
 
 ## Supported platform
-- windows: x86_64
-- linux: x86_64
+- windows: x86_64, arm64
+- linux: x86_64, arm64
 - android: arm64, x86_64
 
 ## How it's made
