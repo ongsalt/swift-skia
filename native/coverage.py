@@ -25,6 +25,9 @@ UNWRAPPED_ON_PURPOSE = {
     "sk_canvas_destroy": "SKCanvas is borrowed; its owner destroys it",
     "sk_font_measure_text_no_return": "measureText covers it",
     "sk_pathmeasure_new": "init(path) covers it; setPath resets",
+    "sk_pixmap_get_writeable_addr_with_xy": "mutableBytes with rowBytes covers it",
+    "sk_pixmap_reset_with_params": "would change which pixels the pixmap borrows; make a new pixmap",
+    "sk_surface_draw": "draw(canvas, x, y, sampling, paint) covers it",
 }
 
 DECL = re.compile(r"SK_C_API\b[^;(]*?\b((?:sk|gr|skottie|sksg|skresources)_\w+)\s*\(")

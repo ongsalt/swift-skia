@@ -11,8 +11,25 @@ public struct SKPixmap: ~Copyable, ~Escapable {
 		self.handle = handle
 	}
 
+	/// `SkPixmap(info, addr, rowBytes)` over your own pixels, which stay borrowed while the pixmap
+	/// is alive. Nil when `pixels` is too small for `info` at `rowBytes`.
+	@_lifetime(copy pixels)
+	public init?(_ info: SKImageInfo, _ pixels: consuming MutableRawSpan, _ rowBytes: Int) {
+		let needed = info.height > 0
+			? rowBytes * Int(info.height - 1) + Int(info.width) * info.colorType.bytesPerPixel : 0
+		guard pixels.byteCount >= needed, rowBytes >= Int(info.width) * info.colorType.bytesPerPixel else { return nil }
+		var info = info
+		let address = unsafe pixels.withUnsafeMutableBytes { $0.baseAddress }
+		handle = __sk_pixmap_new_with_params(&info, address, rowBytes)
+	}
+
 	deinit {
 		__sk_pixmap_destructor(handle)
+	}
+
+	/// Empties the pixmap: no pixels, unknown format.
+	public mutating func reset() {
+		__sk_pixmap_reset(handle)
 	}
 
 	public var info: SKImageInfo {
@@ -67,6 +84,19 @@ public struct SKPixmap: ~Copyable, ~Escapable {
 			}
 			let span = unsafe RawSpan(_unsafeStart: start, byteCount: byteCount)
 			return unsafe _overrideLifetime(span, copying: self)
+		}
+	}
+
+	/// `bytes`, writable. The pixmap is exclusively borrowed while the span is alive.
+	public var mutableBytes: MutableRawSpan {
+		@_lifetime(&self)
+		mutating get {
+			let byteCount = bytes.byteCount
+			guard byteCount > 0, let start = __sk_pixmap_get_writable_addr(handle) else {
+				return unsafe _overrideLifetime(MutableRawSpan(), mutating: &self)
+			}
+			let span = unsafe MutableRawSpan(_unsafeStart: start, byteCount: byteCount)
+			return unsafe _overrideLifetime(span, mutating: &self)
 		}
 	}
 
@@ -168,6 +198,33 @@ extension SKImage {
 		let raster = isLazyGenerated ? makeRasterImage() : self
 		guard let raster, let pixmap = raster.peekPixels() else { return nil }
 		return pixmap.encode(format, quality)
+	}
+
+	/// `SkImages::RasterFromPixmap`: a raster image over `pixmap`'s pixels without copying them.
+	/// They must stay valid and unchanged until `release` runs, which Skia calls once the image is
+	/// gone (or right away if creation fails).
+	@unsafe
+	public static func rasterFromPixmap(
+		_ pixmap: borrowing SKPixmap, _ release: @escaping @Sendable () -> Void
+	) -> SKImage? {
+		final class Release {
+			let body: @Sendable () -> Void
+			init(_ body: @escaping @Sendable () -> Void) { self.body = body }
+		}
+		return __sk_image_new_raster(
+			pixmap.handle, { _, context in Unmanaged<Release>.fromOpaque(context!).takeRetainedValue().body() },
+			Unmanaged.passRetained(Release(release)).toOpaque())
+	}
+
+	/// `SkImages::DeferredFromPicture`: an image that draws `picture` when it's first used.
+	public static func deferredFromPicture(
+		_ picture: SKPicture, _ dimensions: SKSizeI, _ matrix: SKMatrix? = nil, _ paint: SKPaint? = nil,
+		_ useFloatingPointBitDepth: Bool = false, _ colorSpace: SKColorSpace? = nil, _ props: OpaquePointer? = nil
+	) -> SKImage? {
+		var dimensions = dimensions
+		return _skWithOptionalPointer(matrix) { matrix in
+			__sk_image_new_from_picture(picture, &dimensions, matrix, paint?.handle, useFloatingPointBitDepth, colorSpace, props)
+		}
 	}
 
 	/// A raster image holding a copy of `pixmap`'s pixels.

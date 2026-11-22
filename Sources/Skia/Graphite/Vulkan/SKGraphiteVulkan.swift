@@ -102,6 +102,13 @@ extension SKGraphiteBackendTexture {
 	}
 }
 
+extension SKGraphiteTextureInfo {
+	public static func vulkan(_ info: SKGraphiteVkTextureInfo) -> SKGraphiteTextureInfo? {
+		var info = info
+		return sk_graphite_vk_texture_info_new(&info).map(SKGraphiteTextureInfo.init(handle:))
+	}
+}
+
 extension SKGraphiteBackendSemaphore {
 	/// The `VkSemaphore` must outlive the GPU work using it.
 	public static func vulkan(_ semaphore: UInt64) -> SKGraphiteBackendSemaphore? {

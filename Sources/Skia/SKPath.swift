@@ -149,6 +149,29 @@ extension SKPath {
 		let result = SKPath()
 		return __sk_pathop_as_winding(handle, result.handle) ? result : nil
 	}
+
+	/// `TightBounds`: like `computeTightBounds()`, but nil when it can't be computed.
+	public func tightBounds() -> SKRect? {
+		var rect = SKRect()
+		return __sk_pathop_tight_bounds(handle, &rect) ? rect : nil
+	}
+}
+
+extension SKPathEffect {
+	/// `SkPath1DPathEffect::Make`: stamps `path` every `advance` along the stroked path, starting
+	/// `phase` in.
+	public static func make1DPath(
+		_ path: SKPath, _ advance: Float, _ phase: Float, _ style: SKPath1DPathEffectStyle
+	) -> SKPathEffect? {
+		__sk_path_effect_create_1d_path(path.handle, advance, phase, style)
+	}
+
+	/// `SkPath2DPathEffect::Make`: fills the area with `path`, tiled on the lattice `matrix` maps
+	/// integer points to.
+	public static func make2DPath(_ matrix: SKMatrix, _ path: SKPath) -> SKPathEffect? {
+		var matrix = matrix
+		return __sk_path_effect_create_2d_path(&matrix, path.handle)
+	}
 }
 
 /// `SkOpBuilder`: combines many paths more efficiently than chaining `SKPath.op`.
