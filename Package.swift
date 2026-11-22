@@ -18,8 +18,8 @@ let skiaLib: Target =
 		.binaryTarget(
 			name: "SkiaLib",
 			url:
-				"https://github.com/ongsalt/swift-skia/releases/download/skia-a9e4fac6f758/skia.artifactbundleindex",
-			checksum: "2da894c95c1bfef80e4e258585764bd5d332017e1eea91a32238f06833b8ec55"
+				"https://github.com/ongsalt/swift-skia/releases/download/skia-5d226f638edb/skia.artifactbundleindex",
+			checksum: "286019a9bc6fccd030a4a1708c58f497cc697433f4803a73639b0932ed46b83c"
 		)
 	}
 

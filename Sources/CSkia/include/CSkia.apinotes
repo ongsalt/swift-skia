@@ -52,6 +52,11 @@ Tags:
   SwiftImportAs: reference
   SwiftRetainOp: sk_maskfilter_ref
   SwiftReleaseOp: sk_maskfilter_unref
+- Name: sk_meshspecification_t
+  SwiftName: SKMeshspecification
+  SwiftImportAs: reference
+  SwiftRetainOp: sk_meshspecification_ref
+  SwiftReleaseOp: sk_meshspecification_unref
 - Name: sk_path_effect_t
   SwiftName: SKPathEffect
   SwiftImportAs: reference
@@ -242,6 +247,23 @@ Tags:
   SwiftName: SKMatrix44
 - Name: sk_matrix_t
   SwiftName: SKMatrix
+- Name: sk_mesh_make_args_t
+  SwiftName: SKMeshMakeArgs
+- Name: sk_mesh_make_indexed_args_t
+  SwiftName: SKMeshMakeIndexedArgs
+- Name: sk_mesh_mode_t
+  SwiftName: SKMeshMode
+  EnumExtensibility: open
+- Name: sk_meshspecification_attribute_t
+  SwiftName: SKMeshSpecificationAttribute
+- Name: sk_meshspecification_attribute_type_t
+  SwiftName: SKMeshSpecificationAttributeType
+  EnumExtensibility: open
+- Name: sk_meshspecification_varying_t
+  SwiftName: SKMeshSpecificationVarying
+- Name: sk_meshspecification_varying_type_t
+  SwiftName: SKMeshSpecificationVaryingType
+  EnumExtensibility: open
 - Name: sk_mipmap_mode_t
   SwiftName: SKMipmapMode
   EnumExtensibility: open
@@ -477,6 +499,20 @@ Typedefs:
   SwiftName: SKMatrix44
 - Name: sk_matrix_t
   SwiftName: SKMatrix
+- Name: sk_mesh_make_args_t
+  SwiftName: SKMeshMakeArgs
+- Name: sk_mesh_make_indexed_args_t
+  SwiftName: SKMeshMakeIndexedArgs
+- Name: sk_mesh_mode_t
+  SwiftName: SKMeshMode
+- Name: sk_meshspecification_attribute_t
+  SwiftName: SKMeshSpecificationAttribute
+- Name: sk_meshspecification_attribute_type_t
+  SwiftName: SKMeshSpecificationAttributeType
+- Name: sk_meshspecification_varying_t
+  SwiftName: SKMeshSpecificationVarying
+- Name: sk_meshspecification_varying_type_t
+  SwiftName: SKMeshSpecificationVaryingType
 - Name: sk_mipmap_mode_t
   SwiftName: SKMipmapMode
 - Name: sk_paint_style_t
@@ -663,6 +699,8 @@ Functions:
 - Name: sk_canvas_draw_line
   SwiftPrivate: true
 - Name: sk_canvas_draw_link_destination_annotation
+  SwiftPrivate: true
+- Name: sk_canvas_draw_mesh
   SwiftPrivate: true
 - Name: sk_canvas_draw_named_destination_annotation
   SwiftPrivate: true
@@ -1459,6 +1497,48 @@ Functions:
     BoundsSafety:
       Kind: counted_by
       BoundedBy: count
+- Name: sk_mesh_index_buffer_copy_ganesh
+  Availability: nonswift
+- Name: sk_mesh_index_buffer_make_ganesh
+  Availability: nonswift
+- Name: sk_mesh_index_buffer_update
+  Availability: nonswift
+- Name: sk_mesh_make
+  SwiftPrivate: true
+- Name: sk_mesh_make_indexed
+  SwiftPrivate: true
+- Name: sk_mesh_vertex_buffer_copy_ganesh
+  Availability: nonswift
+- Name: sk_mesh_vertex_buffer_make_ganesh
+  Availability: nonswift
+- Name: sk_mesh_vertex_buffer_update
+  Availability: nonswift
+- Name: sk_meshspecification_get_child_from_index
+  SwiftName: SKMeshspecification.getChildFromIndex(self:_:_:)
+- Name: sk_meshspecification_get_child_name
+  SwiftName: SKMeshspecification.getChildName(self:_:_:)
+- Name: sk_meshspecification_get_children_size
+  SwiftName: getter:SKMeshspecification.childrenSize(self:)
+- Name: sk_meshspecification_get_colorspace
+  SwiftReturnOwnership: retained
+  SwiftName: getter:SKMeshspecification.colorspace(self:)
+- Name: sk_meshspecification_get_stride
+  SwiftName: getter:SKMeshspecification.stride(self:)
+- Name: sk_meshspecification_get_uniform_byte_size
+  SwiftName: getter:SKMeshspecification.uniformByteSize(self:)
+- Name: sk_meshspecification_get_uniform_from_index
+  SwiftName: SKMeshspecification.getUniformFromIndex(self:_:_:)
+- Name: sk_meshspecification_get_uniform_name
+  SwiftName: SKMeshspecification.getUniformName(self:_:_:)
+- Name: sk_meshspecification_get_uniforms_size
+  SwiftName: getter:SKMeshspecification.uniformsSize(self:)
+- Name: sk_meshspecification_make
+  SwiftReturnOwnership: retained
+  SwiftName: SKMeshspecification.make(_:_:_:_:_:_:_:_:_:_:)
+- Name: sk_meshspecification_ref
+  Availability: nonswift
+- Name: sk_meshspecification_unref
+  Availability: nonswift
 - Name: sk_nway_canvas_add_canvas
   SwiftPrivate: true
 - Name: sk_nway_canvas_remove_canvas
@@ -2550,16 +2630,32 @@ Enumerators:
   SwiftName: fixedColor
 - Name: FLOAT2X2_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float2x2
+- Name: FLOAT2_SK_MESHSPECIFICATION_ATTRIBUTE_TYPE
+  SwiftName: float2
+- Name: FLOAT2_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: float2
 - Name: FLOAT2_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float2
 - Name: FLOAT3X3_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float3x3
+- Name: FLOAT3_SK_MESHSPECIFICATION_ATTRIBUTE_TYPE
+  SwiftName: float3
+- Name: FLOAT3_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: float3
 - Name: FLOAT3_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float3
 - Name: FLOAT4X4_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float4x4
+- Name: FLOAT4_SK_MESHSPECIFICATION_ATTRIBUTE_TYPE
+  SwiftName: float4
+- Name: FLOAT4_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: float4
 - Name: FLOAT4_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float4
+- Name: FLOAT_SK_MESHSPECIFICATION_ATTRIBUTE_TYPE
+  SwiftName: float
+- Name: FLOAT_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: float
 - Name: FLOAT_SK_RUNTIMEEFFECT_UNIFORM_TYPE
   SwiftName: float
 - Name: FRAGMENT_SK_RUNTIMEEFFECT_UNIFORM_FLAGS
@@ -2582,8 +2678,16 @@ Enumerators:
   SwiftName: gray8
 - Name: G_SK_COLOR_CHANNEL
   SwiftName: g
+- Name: HALF2_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: half2
+- Name: HALF3_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: half3
+- Name: HALF4_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: half4
 - Name: HALF_PRECISION_SK_RUNTIMEEFFECT_UNIFORM_FLAGS
   SwiftName: halfPrecision
+- Name: HALF_SK_MESHSPECIFICATION_VARYING_TYPE
+  SwiftName: half
 - Name: HARDLIGHT_SK_BLENDMODE
   SwiftName: hardLight
 - Name: HEIF_SK_ENCODED_FORMAT
@@ -2940,12 +3044,18 @@ Enumerators:
   SwiftName: translate
 - Name: TRANSPARENT_SK_LATTICE_RECT_TYPE
   SwiftName: transparent
+- Name: TRIANGLES_SK_MESH_MODE
+  SwiftName: triangles
 - Name: TRIANGLES_SK_VERTICES_VERTEX_MODE
   SwiftName: triangles
 - Name: TRIANGLE_FAN_SK_VERTICES_VERTEX_MODE
   SwiftName: triangleFan
+- Name: TRIANGLE_STRIP_SK_MESH_MODE
+  SwiftName: triangleStrip
 - Name: TRIANGLE_STRIP_SK_VERTICES_VERTEX_MODE
   SwiftName: triangleStrip
+- Name: UBYTE4_UNORM_SK_MESHSPECIFICATION_ATTRIBUTE_TYPE
+  SwiftName: ubyte4Unorm
 - Name: UNIMPLEMENTED_SK_CODEC_RESULT
   SwiftName: unimplemented
 - Name: UNION_SK_PATHOP

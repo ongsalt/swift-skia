@@ -126,6 +126,10 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_clip_path_with_operation(handle, path.handle, operation, antialias)
 	}
 
+	public func clipRegion(_ region: SKRegion, _ operation: SKClipOperation = .intersect) {
+		__sk_canvas_clip_region(handle, region.handle, operation)
+	}
+
 	public var localClipBounds: SKRect {
 		var rect = SKRect()
 		_ = __sk_canvas_get_local_clip_bounds(handle, &rect)
@@ -305,6 +309,57 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		__sk_canvas_draw_image_nine(handle, image, &center, &dst, filter, paint?.handle)
 	}
 
+	/// `SkCanvas::Lattice`: `image` divided at `xDivs` and `yDivs`; the cells between divisions
+	/// stretch to fill `dst`, the rest keep their size.
+	public struct Lattice {
+		public var xDivs: [Int32]
+		public var yDivs: [Int32]
+		/// One per cell, row by row: `(xDivs.count + 1) * (yDivs.count + 1)`. Nil draws every cell.
+		public var rectTypes: [SKLatticeRectType]?
+		/// The part of the image to divide. Nil: all of it.
+		public var bounds: SKRectI?
+		/// One per cell, used by `.fixedColor` cells.
+		public var colors: [SKColor]?
+
+		public init(
+			xDivs: [Int32], yDivs: [Int32], rectTypes: [SKLatticeRectType]? = nil, bounds: SKRectI? = nil,
+			colors: [SKColor]? = nil
+		) {
+			self.xDivs = xDivs
+			self.yDivs = yDivs
+			self.rectTypes = rectTypes
+			self.bounds = bounds
+			self.colors = colors
+		}
+	}
+
+	public func drawImageLattice(
+		_ image: SKImage, _ lattice: Lattice, _ dst: SKRect, _ filter: SKFilterMode = .nearest, _ paint: SKPaint? = nil
+	) {
+		let cells = (lattice.xDivs.count + 1) * (lattice.yDivs.count + 1)
+		precondition(lattice.rectTypes.map { $0.count == cells } ?? true, "rectTypes needs \(cells) entries")
+		precondition(lattice.colors.map { $0.count == cells } ?? true, "colors needs \(cells) entries")
+		var dst = dst
+		lattice.xDivs.withUnsafeBufferPointer { xDivs in
+			lattice.yDivs.withUnsafeBufferPointer { yDivs in
+				withOptionalArray(lattice.rectTypes) { rectTypes in
+					withOptionalArray(lattice.colors) { colors in
+						_skWithOptionalPointer(lattice.bounds) { bounds in
+							var raw = SKLattice(
+								fXDivs: xDivs.baseAddress, fYDivs: yDivs.baseAddress, fRectTypes: rectTypes,
+								fXCount: Int32(xDivs.count), fYCount: Int32(yDivs.count), fBounds: bounds, fColors: colors)
+							__sk_canvas_draw_image_lattice(handle, image, &raw, &dst, filter, paint?.handle)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public func drawRegion(_ region: SKRegion, _ paint: SKPaint) {
+		__sk_canvas_draw_region(handle, region.handle, paint.handle)
+	}
+
 	/// A Coons patch: 4 cubic edges (12 points, clockwise from the top left), optional corner
 	/// colors and texture coordinates for the paint's shader.
 	public func drawPatch(
@@ -341,6 +396,56 @@ public struct SKCanvas: ~Copyable, ~Escapable {
 		var rect = rect
 		__sk_canvas_draw_annotation(handle, &rect, key, value)
 	}
+
+	/// `SkAnnotateRectWithURL`: `rect` links to the URL in `url` (a NUL-terminated string).
+	public func annotateRectWithURL(_ rect: SKRect, _ url: SKData) {
+		var rect = rect
+		__sk_canvas_draw_url_annotation(handle, &rect, url)
+	}
+
+	/// `SkAnnotateNamedDestination`: names `point` as a link target.
+	public func annotateNamedDestination(_ point: SKPoint, _ name: SKData) {
+		var point = point
+		__sk_canvas_draw_named_destination_annotation(handle, &point, name)
+	}
+
+	/// `SkAnnotateLinkToDestination`: `rect` links to the destination called `name`.
+	public func annotateLinkToDestination(_ rect: SKRect, _ name: SKData) {
+		var rect = rect
+		__sk_canvas_draw_link_destination_annotation(handle, &rect, name)
+	}
+
+	/// The surface this canvas draws into, nil for canvases without one (e.g. picture recording).
+	public var surface: SKSurface? { __sk_get_surface(handle) }
+}
+
+extension SKSurface {
+	/// `draw`: this surface's current contents into `canvas` at (`x`, `y`).
+	public func draw(
+		_ canvas: borrowing SKCanvas, _ x: Float, _ y: Float, _ sampling: SKSamplingOptions = SKSamplingOptions(),
+		_ paint: SKPaint? = nil
+	) {
+		var sampling = sampling
+		__sk_surface_draw_with_sampling(self, canvas.handle, x, y, &sampling, paint?.handle)
+	}
+}
+
+extension SKDrawable {
+	public func draw(_ canvas: borrowing SKCanvas, _ matrix: SKMatrix? = nil) {
+		_skWithOptionalPointer(matrix) { __sk_drawable_draw(self, canvas.handle, $0) }
+	}
+}
+
+extension SKPicture {
+	/// `playback`: replays the recorded commands into `canvas`.
+	public func playback(_ canvas: borrowing SKCanvas) {
+		__sk_picture_playback(self, canvas.handle)
+	}
+}
+
+private func withOptionalArray<T, R>(_ array: [T]?, _ body: (UnsafePointer<T>?) -> R) -> R {
+	guard let array else { return body(nil) }
+	return array.withUnsafeBufferPointer { body($0.baseAddress) }
 }
 
 private func withOptionalBuffer<let count: Int, T, R>(

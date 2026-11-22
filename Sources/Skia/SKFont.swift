@@ -148,6 +148,24 @@ public final class SKFont {
 		return __sk_font_get_path(handle, glyph, path.handle) ? path : nil
 	}
 
+	/// `getPaths`: each glyph's outline (nil for glyphs without one, like bitmap emoji) and the
+	/// matrix that scales it to this font's size, in `glyphs` order.
+	public func getPaths(_ glyphs: [UInt16], _ body: (_ path: SKPath?, _ matrix: SKMatrix) -> Void) {
+		withoutActuallyEscaping(body) { body in
+			var body = body
+			var glyphs = glyphs
+			withUnsafeMutablePointer(to: &body) { context in
+				glyphs.withUnsafeMutableBufferPointer { glyphs in
+					__sk_font_get_paths(handle, glyphs.baseAddress, Int32(glyphs.count), { path, matrix, context in
+						let body = context!.assumingMemoryBound(to: ((SKPath?, SKMatrix) -> Void).self).pointee
+						// The path is only valid during the callback.
+						body(path.map { SKPath(handle: __sk_path_clone($0)) }, matrix!.pointee)
+					}, context)
+				}
+			}
+		}
+	}
+
 	/// How much of `text` fits in `maxWidth`: its length in UTF-8 bytes and its width.
 	public func breakText(_ text: String, _ maxWidth: Float, _ paint: SKPaint? = nil) -> (byteCount: Int, width: Float) {
 		var width: Float = 0
@@ -159,6 +177,19 @@ public final class SKFont {
 	public func getTextPath(_ text: String, _ x: Float, _ y: Float) -> SKPath {
 		let path = SKPath()
 		__sk_text_utils_get_path(text.utf8.span.bytes, .utf8, x, y, handle, path.handle)
+		return path
+	}
+
+	/// The outlines of `text` with each glyph at its own point in `positions`.
+	public func getTextPath(_ text: String, _ positions: [SKPoint]) -> SKPath {
+		precondition(positions.count == textToGlyphs(text).count, "one position per glyph")
+		let path = SKPath()
+		var text = text
+		text.withUTF8 { text in
+			positions.withUnsafeBufferPointer { positions in
+				__sk_text_utils_get_pos_path(text.baseAddress, text.count, .utf8, positions.baseAddress, handle, path.handle)
+			}
+		}
 		return path
 	}
 }

@@ -278,6 +278,14 @@ extension SKImageFilter {
 	}
 }
 
+public func sk_mesh_make(_ spec: SKMeshspecification?, _ args: SKMeshMakeArgs?, _ error: OpaquePointer?) -> OpaquePointer? {
+	_skWithOptionalPointer(args) { args in __sk_mesh_make(spec, args, error) }
+}
+
+public func sk_mesh_make_indexed(_ spec: SKMeshspecification?, _ args: SKMeshMakeIndexedArgs?, _ error: OpaquePointer?) -> OpaquePointer? {
+	_skWithOptionalPointer(args) { args in __sk_mesh_make_indexed(spec, args, error) }
+}
+
 public func sk_path_convert_conic_to_quads(_ p0: SKPoint, _ p1: SKPoint, _ p2: SKPoint, _ w: Float, _ pts: UnsafeMutablePointer<SKPoint>?, _ pow2: Int32) -> Int32 {
 	withUnsafePointer(to: p0) { p0 in withUnsafePointer(to: p1) { p1 in withUnsafePointer(to: p2) { p2 in __sk_path_convert_conic_to_quads(p0, p1, p2, w, pts, pow2) } } }
 }
