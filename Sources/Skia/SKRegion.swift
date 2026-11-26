@@ -139,7 +139,7 @@ extension SKRegion {
 
 		@_lifetime(borrow region)
 		public init(_ region: borrowing SKRegion, _ clip: SKRectI) {
-			handle = sk_region_cliperator_new(region.handle, clip)
+			handle = sk_region_cliperator_new(region.handle, clip)!
 		}
 
 		deinit {

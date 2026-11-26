@@ -24,3 +24,5 @@ ref/
 
 __pycache__
 /smoke_cpp
+
+.index-build
